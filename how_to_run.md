@@ -111,6 +111,61 @@ fig_saturation_pushthrough.png
 fig_saturating_phase.png
 ```
 
+## Part III: Heterogeneous Rewards
+
+The heterogeneous-reward code is:
+
+```text
+src/monty_hall_heterogeneous.py
+```
+
+Run the exchangeable reward-multiset model:
+
+```sh
+python -B src/monty_hall_heterogeneous.py exchangeable --K 12 --m 4 --r 4 --reward-dist lognormal --trials 100000 --seed 3
+```
+
+Run the door-specific Bernoulli-value prior model:
+
+```sh
+python -B src/monty_hall_heterogeneous.py door-specific --K 10 --r 2 --trials 100000 --seed 4 --initial lowest_mu --monty uniform_zero --plot
+```
+
+Search for a sacrifice-initial-choice example:
+
+```sh
+python -B src/monty_hall_heterogeneous.py find-sacrifice --K 4 --r 1 --tries 100 --trials 20000 --seed 5
+```
+
+Build the Part III paper:
+
+```sh
+cd monty_hall_paper_iii
+make
+```
+
+Main output:
+
+```text
+monty_hall_paper_iii/monty_iii.pdf
+```
+
+The Part III plotting script is:
+
+```text
+monty_hall_paper_iii/generate_plots.py
+```
+
+It generates:
+
+```text
+fig_exchangeable_collapse.png
+fig_prior_landscape.png
+fig_strategy_comparison.png
+fig_sacrifice_choice.png
+fig_monty_policy_effect.png
+```
+
 ## Clean Build Artifacts
 
 Clean Part I LaTeX artifacts:
@@ -127,6 +182,13 @@ cd monty_hall_paper_ii
 make clean
 ```
 
+Clean Part III LaTeX artifacts:
+
+```sh
+cd monty_hall_paper_iii
+make clean
+```
+
 ## Notes
 
 - Part I is the constant-cost baseline with exact threshold `c* = 1/K`.
@@ -134,3 +196,6 @@ make clean
 - The key variable-cost increment is `W(t+1)-W(t) = Delta_t - c_t`.
 - Linearly increasing costs can produce interior optima.
 - Costs that rise and saturate can restore the late-stage push-through effect.
+- Part III separates exchangeable heterogeneous rewards from door-specific priors.
+- Exchangeable heterogeneous rewards collapse to total reward mass under uniform switching.
+- Door-specific priors make switching rules, Monty policy, and initial choice matter.
