@@ -2,6 +2,7 @@ import unittest
 
 from monty_hall_heterogeneous import (
     DoorPrior,
+    average_stage2_rows,
     exchangeable_curve_rows,
     exchangeable_theory,
     parse_probability_reward_pairs,
@@ -148,6 +149,23 @@ class HeterogeneousRewardTests(unittest.TestCase):
         values = {row["switch_strategy"]: row["empirical_reward"] for row in stage2_slice}
         self.assertGreater(values["prior_best_switch"], values["uniform_switch"])
         self.assertGreaterEqual(values["oracle_best_switch"], values["prior_best_switch"])
+
+    def test_average_stage2_rows_reduces_repeats(self) -> None:
+        priors = parse_probability_reward_pairs("0.1:1,0.2:1.5,0.8:4,0.3:2")
+        raw_rows = stage2_rows(priors=priors, r_values=[0, 1], trials=8_000, seed=17, repeats=3)
+        averaged = average_stage2_rows(raw_rows)
+        self.assertEqual(len(raw_rows), 3 * 2 * 3 * 3 * 4)
+        self.assertEqual(len(averaged), 2 * 3 * 3 * 4)
+        sample = next(
+            row
+            for row in averaged
+            if row["r"] == 1.0
+            and row["initial_strategy"] == "random"
+            and row["monty_policy"] == "uniform_zero"
+            and row["switch_strategy"] == "prior_best_switch"
+        )
+        self.assertEqual(sample["repeats"], 3.0)
+        self.assertGreaterEqual(sample["empirical_reward_sd"], 0.0)
 
 
 if __name__ == "__main__":

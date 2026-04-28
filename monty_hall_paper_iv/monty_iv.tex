@@ -416,7 +416,10 @@ but a posterior landscape over surviving doors.
 \subsection{Monty policy sensitivity}
 
 Stage 2 also lets us ask whether Monty's legal reveal policy materially changes
-the player's value. Figure~\ref{fig:stage2-policy-gain} summarizes the gain
+the player's value. In the updated code path, the reported Stage 2 curves are
+not single-seed artifacts: they are averaged over several independent RNG runs
+for the same labeled prior landscape. Figure~\ref{fig:stage2-policy-gain}
+summarizes the gain
 \[
   \texttt{prior\_best\_switch} - \texttt{uniform\_switch}
 \]
@@ -504,6 +507,34 @@ one controls for coarse structural features such as:
 \item number of near-best alternatives;
 \item reveal fraction rather than raw reveal count.
 \end{itemize}
+
+To make this more robust, the code now also supports a family-of-landscapes
+experiment: sample many random labeled prior landscapes, average each landscape
+internally over several RNG seeds, and then overlay the resulting normalized
+curves by initial-choice class. This does not produce a full universal
+collapse, but it is the right stress test for the weaker hypothesis. If the
+`random' and `lowest\_mu' classes continue to cluster while `highest\_mu'
+separates, then the partial-collapse story is not just a quirk of one
+hand-picked landscape.
+
+Figure~\ref{fig:stage2-family-collapse} shows exactly this robustness check.
+Across a family of random labeled landscapes, with each landscape internally
+averaged over multiple RNG runs, the `random' and `lowest\_mu' classes remain
+remarkably close through most of the reveal range, while the `highest\_mu'
+class sits systematically lower before converging late. This is not a universal
+collapse, but it is a stable and interpretable class-dependent one.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../outputs/stage2_family_partial_collapse_family.png}
+  \caption{Robustness of the partial-collapse idea across a family of random
+  labeled prior landscapes. Faint lines are individual landscapes, each already
+  averaged over repeated RNG runs. Bold lines and ribbons summarize the
+  class-level behavior by initial strategy. The `random' and `lowest\_mu'
+  classes cluster tightly, while `highest\_mu' separates early and converges
+  only near full reveal depth.}
+  \label{fig:stage2-family-collapse}
+\end{figure}
 
 \section{Next Part IV Questions}
 

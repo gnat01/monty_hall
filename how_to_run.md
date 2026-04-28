@@ -243,18 +243,39 @@ make
 Run the Stage 2 labeled unequal-prize analysis:
 
 ```sh
-python -B src/monty_hall_heterogeneous.py door-specific-stage2 --door-priors '0.1:1,0.2:1.5,0.8:4,0.3:2,0.05:10' --trials 60000 --seed 11 --output-prefix outputs/stage2_labeled
+python -B src/monty_hall_heterogeneous.py door-specific-stage2 --door-priors '0.1:1,0.2:1.5,0.8:4,0.3:2,0.05:10' --trials 30000 --repeats 5 --seed 11 --output-prefix outputs/stage2_labeled
 ```
 
 The Stage 2 analysis command writes:
 
 - `..._priors.csv`
+- `..._strategy_repeats.csv`
 - `..._strategy_table.csv`
 - `..._prior_landscape.png`
 - `..._strategy_panel.png`
 - `..._monty_panel.png`
 - `..._policy_gain_heatmap.png`
 - `..._partial_collapse.png`
+
+The `..._strategy_table.csv` file is repeat-averaged. The optional
+`..._strategy_repeats.csv` file contains the raw per-seed runs that feed the
+average.
+
+Run the stronger family-of-landscapes partial-collapse experiment:
+
+```sh
+python -B src/monty_hall_heterogeneous.py door-specific-stage2-collapse --K 5 --landscapes 18 --trials 20000 --repeats 4 --seed 19 --output-prefix outputs/stage2_family
+```
+
+This writes:
+
+- `..._landscapes.csv`
+- `..._collapse_table.csv`
+- `..._partial_collapse_family.png`
+
+The Part IV paper uses this robustness figure as well:
+
+- `stage2_family_partial_collapse_family.png`
 
 The Part IV paper now also uses these Stage 2 labeled-prior figures:
 
@@ -267,7 +288,8 @@ So the standard full Part IV workflow is:
 
 ```sh
 python -B src/monty_hall_heterogeneous.py exchangeable-stage1 --K 12 --m 4 --reward-vectors '1,2,5,9;4,4,4,5;8,4,3,2' --trials 100000 --seed 3 --output-prefix outputs/stage1_exchangeable
-python -B src/monty_hall_heterogeneous.py door-specific-stage2 --door-priors '0.1:1,0.2:1.5,0.8:4,0.3:2,0.05:10' --trials 60000 --seed 11 --output-prefix outputs/stage2_labeled
+python -B src/monty_hall_heterogeneous.py door-specific-stage2 --door-priors '0.1:1,0.2:1.5,0.8:4,0.3:2,0.05:10' --trials 30000 --repeats 5 --seed 11 --output-prefix outputs/stage2_labeled
+python -B src/monty_hall_heterogeneous.py door-specific-stage2-collapse --K 5 --landscapes 18 --trials 20000 --repeats 4 --seed 19 --output-prefix outputs/stage2_family
 cd monty_hall_paper_iv
 make
 ```
@@ -315,3 +337,4 @@ make clean
 - Part IV Stage 1 shows that unequal prize vectors with the same total reward mass `V` collapse empirically under exchangeability.
 - Part IV Stage 2 shows that once door labels carry priors, initial choice and switch rule interact strongly and the scalar collapse disappears.
 - Part IV Stage 2 also includes a weaker partial-collapse diagnostic, normalized by the oracle switch value, to explore whether any class-dependent rescaling survives after label symmetry is broken.
+- The repeat-averaged and family-of-landscapes Stage 2 runs are the robust versions of that partial-collapse test.

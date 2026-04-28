@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  28 APR 2026 16:10
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  28 APR 2026 17:17
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -682,7 +682,7 @@ Package pdftex.def Info: ../outputs/stage2_labeled_strategy_panel.png  used on
 input line 395.
 (pdftex.def)             Requested size: 469.75502pt x 147.23695pt.
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 4
-21.
+24.
 
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
@@ -697,7 +697,7 @@ File: ../outputs/stage2_labeled_policy_gain_heatmap.png Graphic file (type png)
 
 <use ../outputs/stage2_labeled_policy_gain_heatmap.png>
 Package pdftex.def Info: ../outputs/stage2_labeled_policy_gain_heatmap.png  use
-d on input line 428.
+d on input line 431.
 (pdftex.def)             Requested size: 413.3867pt x 252.63913pt.
 
 
@@ -709,10 +709,10 @@ d on input line 428.
 File: ../outputs/stage2_labeled_partial_collapse.png Graphic file (type png)
 <use ../outputs/stage2_labeled_partial_collapse.png>
 Package pdftex.def Info: ../outputs/stage2_labeled_partial_collapse.png  used o
-n input line 488.
+n input line 491.
 (pdftex.def)             Requested size: 413.3867pt x 254.39647pt.
 
-Underfull \hbox (badness 10000) in paragraph at lines 493--493
+Underfull \hbox (badness 10000) in paragraph at lines 496--496
 []\T1/lmr/m/n/10.95 (+20) Figure 7: []A weaker Stage 2 col-lapse at-tempt. The 
 plot-ted quan-tity is
  []
@@ -720,8 +720,19 @@ plot-ted quan-tity is
 
 
 [10 <../outputs/stage2_labeled_partial_collapse.png>]
+<../outputs/stage2_family_partial_collapse_family.png, id=162, 953.964pt x 310.
+761pt>
+File: ../outputs/stage2_family_partial_collapse_family.png Graphic file (type p
+ng)
+<use ../outputs/stage2_family_partial_collapse_family.png>
+Package pdftex.def Info: ../outputs/stage2_family_partial_collapse_family.png  
+used on input line 529.
+(pdftex.def)             Requested size: 469.75502pt x 153.02817pt.
 
-[11] (./monty_iv.aux)
+
+[11 <../outputs/stage2_family_partial_collapse_family.png>]
+
+[12] (./monty_iv.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -730,13 +741,13 @@ Package rerunfilecheck Info: File `monty_iv.out' has not changed.
 (rerunfilecheck)             Checksum: 45817D2BB613BFB3AC81B5B9F7E74620;3003.
  ) 
 Here is how much of TeX's memory you used:
- 14223 strings out of 474662
- 225793 string characters out of 5751110
- 664424 words of memory out of 5000000
- 36829 multiletter control sequences out of 15000+600000
- 646161 words of font info for 182 fonts, out of 8000000 for 9000
+ 14235 strings out of 474662
+ 226268 string characters out of 5751110
+ 664833 words of memory out of 5000000
+ 36837 multiletter control sequences out of 15000+600000
+ 646244 words of font info for 183 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
- 75i,9n,79p,1005b,538s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,9n,79p,1005b,540s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></u
 sr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/lo
 cal/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmex10.pfb></usr/local/t
@@ -752,10 +763,10 @@ m/lmsy10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lms
 y8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmtt10.pf
 b></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/amsfonts/symbols/
 msbm10.pfb>
-Output written on monty_iv.pdf (11 pages, 647763 bytes).
+Output written on monty_iv.pdf (12 pages, 895680 bytes).
 PDF statistics:
- 257 PDF objects out of 1000 (max. 8388607)
- 196 compressed objects within 2 object streams
- 44 named destinations out of 1000 (max. 500000)
- 48804 words of extra memory for PDF output out of 51595 (max. 10000000)
+ 266 PDF objects out of 1000 (max. 8388607)
+ 201 compressed objects within 3 object streams
+ 46 named destinations out of 1000 (max. 500000)
+ 48809 words of extra memory for PDF output out of 51595 (max. 10000000)
 

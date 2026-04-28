@@ -559,43 +559,83 @@ def stage2_rows(
     r_values: list[int],
     trials: int,
     seed: int | None,
+    repeats: int = 1,
 ) -> list[dict[str, float | str]]:
+    if repeats < 1:
+        raise ValueError("Need repeats >= 1")
     rows: list[dict[str, float | str]] = []
     initials: list[InitialStrategy] = ["random", "highest_mu", "lowest_mu"]
     monty_policies: list[MontyPolicy] = ["uniform_zero", "low_mu_zero", "high_mu_zero"]
-    for r_index, r in enumerate(r_values):
-        for init_index, initial in enumerate(initials):
-            for monty_index, monty in enumerate(monty_policies):
-                run_seed = None
-                if seed is not None:
-                    run_seed = seed + 10_000 * r_index + 1_000 * init_index + 100 * monty_index
-                out = simulate_door_specific(
-                    k=len(priors),
-                    r=r,
-                    trials=trials,
-                    seed=run_seed,
-                    initial_strategy=initial,
-                    monty_policy=monty,
-                    priors=priors,
-                )
-                for switch, value in out.strategy_values.items():
-                    rows.append(
-                        {
-                            "k": float(len(priors)),
-                            "r": float(r),
-                            "trials": float(trials),
-                            "initial_strategy": initial,
-                            "monty_policy": monty,
-                            "switch_strategy": switch,
-                            "empirical_reward": value,
-                            "chosen_initial_mu": out.means["chosen_initial_mu"],
-                            "opened_count": out.means["opened_count"],
-                            "prior_mu_min": out.means["prior_mu_min"],
-                            "prior_mu_max": out.means["prior_mu_max"],
-                            "prior_mu_mean": out.means["prior_mu_mean"],
-                        }
+    for repeat in range(repeats):
+        for r_index, r in enumerate(r_values):
+            for init_index, initial in enumerate(initials):
+                for monty_index, monty in enumerate(monty_policies):
+                    run_seed = None
+                    if seed is not None:
+                        run_seed = seed + 1_000_000 * repeat + 10_000 * r_index + 1_000 * init_index + 100 * monty_index
+                    out = simulate_door_specific(
+                        k=len(priors),
+                        r=r,
+                        trials=trials,
+                        seed=run_seed,
+                        initial_strategy=initial,
+                        monty_policy=monty,
+                        priors=priors,
                     )
+                    for switch, value in out.strategy_values.items():
+                        rows.append(
+                            {
+                                "repeat": float(repeat),
+                                "k": float(len(priors)),
+                                "r": float(r),
+                                "trials": float(trials),
+                                "initial_strategy": initial,
+                                "monty_policy": monty,
+                                "switch_strategy": switch,
+                                "empirical_reward": value,
+                                "chosen_initial_mu": out.means["chosen_initial_mu"],
+                                "opened_count": out.means["opened_count"],
+                                "prior_mu_min": out.means["prior_mu_min"],
+                                "prior_mu_max": out.means["prior_mu_max"],
+                                "prior_mu_mean": out.means["prior_mu_mean"],
+                            }
+                        )
     return rows
+
+
+def average_stage2_rows(rows: list[dict[str, float | str]]) -> list[dict[str, float | str]]:
+    grouped: dict[tuple[str, str, str, float], list[dict[str, float | str]]] = {}
+    for row in rows:
+        key = (
+            str(row["initial_strategy"]),
+            str(row["monty_policy"]),
+            str(row["switch_strategy"]),
+            float(row["r"]),
+        )
+        grouped.setdefault(key, []).append(row)
+
+    averaged: list[dict[str, float | str]] = []
+    for key, group in grouped.items():
+        initial, monty, switch, r = key
+        averaged.append(
+            {
+                "repeats": float(len(group)),
+                "k": float(group[0]["k"]),
+                "r": r,
+                "trials": float(group[0]["trials"]),
+                "initial_strategy": initial,
+                "monty_policy": monty,
+                "switch_strategy": switch,
+                "empirical_reward": statistics.fmean(float(row["empirical_reward"]) for row in group),
+                "empirical_reward_sd": statistics.stdev(float(row["empirical_reward"]) for row in group) if len(group) > 1 else 0.0,
+                "chosen_initial_mu": statistics.fmean(float(row["chosen_initial_mu"]) for row in group),
+                "opened_count": statistics.fmean(float(row["opened_count"]) for row in group),
+                "prior_mu_min": statistics.fmean(float(row["prior_mu_min"]) for row in group),
+                "prior_mu_max": statistics.fmean(float(row["prior_mu_max"]) for row in group),
+                "prior_mu_mean": statistics.fmean(float(row["prior_mu_mean"]) for row in group),
+            }
+        )
+    return sorted(averaged, key=lambda row: (row["initial_strategy"], row["monty_policy"], row["switch_strategy"], row["r"]))
 
 
 def write_rows_csv(rows: list[dict[str, float | str]], path: Path) -> Path:
@@ -806,6 +846,82 @@ def plot_stage2_partial_collapse(rows: list[dict[str, float | str]], path: Path)
     return path
 
 
+def stage2_partial_collapse_rows(
+    rows: list[dict[str, float | str]],
+    *,
+    landscape_id: int | None = None,
+) -> list[dict[str, float | str]]:
+    max_r = max(int(row["r"]) for row in rows)
+    collapse_rows: list[dict[str, float | str]] = []
+    for initial in ["random", "highest_mu", "lowest_mu"]:
+        for r in range(max_r + 1):
+            subset = [
+                row
+                for row in rows
+                if int(row["r"]) == r
+                and row["initial_strategy"] == initial
+                and row["monty_policy"] == "uniform_zero"
+            ]
+            values = {str(row["switch_strategy"]): float(row["empirical_reward"]) for row in subset}
+            collapse_rows.append(
+                {
+                    "landscape_id": float(-1 if landscape_id is None else landscape_id),
+                    "initial_strategy": initial,
+                    "r": float(r),
+                    "reveal_fraction": r / max(1, max_r),
+                    "prior_to_oracle": values["prior_best_switch"] / values["oracle_best_switch"],
+                    "uniform_to_oracle": values["uniform_switch"] / values["oracle_best_switch"],
+                    "stay_to_oracle": values["stay"] / values["oracle_best_switch"],
+                    "prior_minus_uniform": values["prior_best_switch"] - values["uniform_switch"],
+                }
+            )
+    return collapse_rows
+
+
+def plot_stage2_family_partial_collapse(rows: list[dict[str, float | str]], path: Path) -> Path:
+    initials = ["random", "highest_mu", "lowest_mu"]
+    colors = {
+        "random": "#22577a",
+        "highest_mu": "#b23a30",
+        "lowest_mu": "#0f766e",
+    }
+    grouped: dict[tuple[str, float], list[float]] = {}
+    landscape_groups: dict[tuple[str, float, float], float] = {}
+    for row in rows:
+        initial = str(row["initial_strategy"])
+        frac = float(row["reveal_fraction"])
+        grouped.setdefault((initial, frac), []).append(float(row["prior_to_oracle"]))
+        landscape_groups[(initial, float(row["landscape_id"]), frac)] = float(row["prior_to_oracle"])
+
+    fig, axes = plt.subplots(1, 3, figsize=(13.2, 4.3), sharey=True)
+    for ax, initial in zip(axes, initials):
+        landscape_ids = sorted({float(row["landscape_id"]) for row in rows if row["initial_strategy"] == initial})
+        fracs = sorted({float(row["reveal_fraction"]) for row in rows if row["initial_strategy"] == initial})
+        for landscape_id in landscape_ids:
+            values = [landscape_groups[(initial, landscape_id, frac)] for frac in fracs]
+            ax.plot(fracs, values, color=colors[initial], alpha=0.18, linewidth=1.0)
+        means = [statistics.fmean(grouped[(initial, frac)]) for frac in fracs]
+        lowers = []
+        uppers = []
+        for frac in fracs:
+            values = grouped[(initial, frac)]
+            sd = statistics.stdev(values) if len(values) > 1 else 0.0
+            lowers.append(max(0.0, statistics.fmean(values) - sd))
+            uppers.append(min(1.1, statistics.fmean(values) + sd))
+        ax.fill_between(fracs, lowers, uppers, color=colors[initial], alpha=0.20)
+        ax.plot(fracs, means, color=colors[initial], linewidth=2.5)
+        ax.set_title(initial)
+        ax.set_xlabel("reveal fraction")
+        ax.grid(axis="y", alpha=0.25)
+    axes[0].set_ylabel("prior_best_switch / oracle_best_switch")
+    fig.suptitle("Stage 2 partial collapse across random labeled landscapes", y=1.02)
+    fig.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -848,8 +964,22 @@ def parse_args() -> argparse.Namespace:
     s2.add_argument("--door-priors", type=str, required=True, help="Comma-separated p:v pairs, e.g. '0.9:4,0.6:3,0.2:8,0.3:5'")
     s2.add_argument("--r-values", type=str, default=None, help="Optional comma-separated reveal counts. Default is 0..K-2.")
     s2.add_argument("--trials", type=int, default=100_000)
+    s2.add_argument("--repeats", type=int, default=1)
     s2.add_argument("--seed", type=int, default=None)
     s2.add_argument("--output-prefix", type=str, default="outputs/stage2_door_specific")
+
+    s2c = sub.add_parser("door-specific-stage2-collapse", help="sample many labeled landscapes and test the partial-collapse idea")
+    s2c.add_argument("--K", "--k", dest="k", type=int, default=5)
+    s2c.add_argument("--r-values", type=str, default=None, help="Optional comma-separated reveal counts. Default is 0..K-2.")
+    s2c.add_argument("--landscapes", type=int, default=18)
+    s2c.add_argument("--trials", type=int, default=40_000)
+    s2c.add_argument("--repeats", type=int, default=4)
+    s2c.add_argument("--seed", type=int, default=None)
+    s2c.add_argument("--q-alpha", type=float, default=2.0)
+    s2c.add_argument("--q-beta", type=float, default=2.0)
+    s2c.add_argument("--log-mu", type=float, default=0.0)
+    s2c.add_argument("--log-sigma", type=float, default=1.0)
+    s2c.add_argument("--output-prefix", type=str, default="outputs/stage2_family")
     return parser.parse_args()
 
 
@@ -927,7 +1057,11 @@ def main() -> None:
         prefix = Path(args.output_prefix)
         priors_path = write_priors_csv(priors, Path(f"{prefix}_priors.csv"))
         print("wrote", priors_path)
-        rows = stage2_rows(priors, r_values, args.trials, args.seed)
+        raw_rows = stage2_rows(priors, r_values, args.trials, args.seed, args.repeats)
+        if args.repeats > 1:
+            repeats_path = write_rows_csv(raw_rows, Path(f"{prefix}_strategy_repeats.csv"))
+            print("wrote", repeats_path)
+        rows = average_stage2_rows(raw_rows)
         table_path = write_rows_csv(rows, Path(f"{prefix}_strategy_table.csv"))
         print("wrote", table_path)
         prior_plot = plot_stage2_prior_landscape(priors, Path(f"{prefix}_prior_landscape.png"))
@@ -940,6 +1074,54 @@ def main() -> None:
         print("wrote", heatmap)
         partial_collapse = plot_stage2_partial_collapse(rows, Path(f"{prefix}_partial_collapse.png"))
         print("wrote", partial_collapse)
+    elif args.cmd == "door-specific-stage2-collapse":
+        if args.k < 3:
+            raise ValueError("Need K >= 3")
+        r_values = parse_int_list(args.r_values) if args.r_values is not None else list(range(0, args.k - 1))
+        if any(r < 0 or r > args.k - 1 for r in r_values):
+            raise ValueError("Need every reveal count r to satisfy 0 <= r <= K - 1")
+        if args.landscapes < 1:
+            raise ValueError("Need landscapes >= 1")
+        if args.repeats < 1:
+            raise ValueError("Need repeats >= 1")
+        prefix = Path(args.output_prefix)
+        landscape_rng = random.Random(args.seed)
+        priors_rows: list[dict[str, float | str]] = []
+        collapse_rows: list[dict[str, float | str]] = []
+        for landscape_id in range(args.landscapes):
+            priors = sample_door_priors(
+                args.k,
+                landscape_rng,
+                q_alpha=args.q_alpha,
+                q_beta=args.q_beta,
+                log_mu=args.log_mu,
+                log_sigma=args.log_sigma,
+            )
+            for door, prior in enumerate(priors):
+                priors_rows.append(
+                    {
+                        "landscape_id": float(landscape_id),
+                        "door": float(door),
+                        "prize_prob": 1.0 - prior.zero_prob,
+                        "reward_value": prior.reward_value,
+                        "prior_mean": prior.mean,
+                    }
+                )
+            raw_rows = stage2_rows(
+                priors,
+                r_values,
+                args.trials,
+                None if args.seed is None else args.seed + 10_000_000 * landscape_id,
+                args.repeats,
+            )
+            averaged = average_stage2_rows(raw_rows)
+            collapse_rows.extend(stage2_partial_collapse_rows(averaged, landscape_id=landscape_id))
+        priors_path = write_rows_csv(priors_rows, Path(f"{prefix}_landscapes.csv"))
+        print("wrote", priors_path)
+        collapse_path = write_rows_csv(collapse_rows, Path(f"{prefix}_collapse_table.csv"))
+        print("wrote", collapse_path)
+        collapse_plot = plot_stage2_family_partial_collapse(collapse_rows, Path(f"{prefix}_partial_collapse_family.png"))
+        print("wrote", collapse_plot)
 
 
 if __name__ == "__main__":
