@@ -15,8 +15,10 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 import random
 import statistics
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -25,6 +27,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 OUT_DIR = Path("outputs")
@@ -437,6 +440,110 @@ def choose_switch(
     raise ValueError(f"unknown switch strategy: {strategy}")
 
 
+def _prior_arrays(priors: list[DoorPrior]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    zero_probs = np.asarray([prior.zero_prob for prior in priors], dtype=float)
+    reward_values = np.asarray([prior.reward_value for prior in priors], dtype=float)
+    means = (1.0 - zero_probs) * reward_values
+    return zero_probs, reward_values, means
+
+
+def _batched_random_choice(mask: np.ndarray, rng: np.random.Generator) -> tuple[np.ndarray, np.ndarray]:
+    counts = mask.sum(axis=1)
+    active = counts > 0
+    chosen = np.zeros(mask.shape[0], dtype=int)
+    if np.any(active):
+        active_counts = counts[active]
+        ranks = (rng.random(active_counts.shape[0]) * active_counts).astype(int)
+        cumulative = np.cumsum(mask[active], axis=1)
+        chosen[active] = np.argmax(cumulative > ranks[:, None], axis=1)
+    return chosen, active
+
+
+def _batched_initial_indices(
+    means: np.ndarray,
+    strategy: InitialStrategy,
+    trials: int,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    if strategy == "random":
+        return rng.integers(0, means.shape[0], size=trials)
+    if strategy == "highest_mu":
+        return np.full(trials, int(np.argmax(means)), dtype=int)
+    if strategy == "lowest_mu":
+        return np.full(trials, int(np.argmin(means)), dtype=int)
+    raise ValueError(f"unknown initial strategy: {strategy}")
+
+
+def _batched_reveals(
+    rewards: np.ndarray,
+    means: np.ndarray,
+    initial: np.ndarray,
+    r: int,
+    policy: MontyPolicy,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    trials, k = rewards.shape
+    opened = np.zeros((trials, k), dtype=bool)
+    initial_mask = np.zeros((trials, k), dtype=bool)
+    initial_mask[np.arange(trials), initial] = True
+    zero_mask = rewards == 0.0
+
+    for _ in range(r):
+        legal = zero_mask & ~opened & ~initial_mask
+        if policy == "uniform_zero":
+            chosen, active = _batched_random_choice(legal, rng)
+        elif policy == "low_mu_zero":
+            active = np.any(legal, axis=1)
+            chosen = np.argmin(np.where(legal, means[None, :], np.inf), axis=1)
+        elif policy == "high_mu_zero":
+            active = np.any(legal, axis=1)
+            chosen = np.argmax(np.where(legal, means[None, :], -np.inf), axis=1)
+        else:
+            raise ValueError(f"unknown Monty policy: {policy}")
+        if not np.any(active):
+            break
+        active_rows = np.flatnonzero(active)
+        opened[active_rows, chosen[active]] = True
+    return opened
+
+
+def _batched_strategy_values(
+    rewards: np.ndarray,
+    means: np.ndarray,
+    initial: np.ndarray,
+    opened: np.ndarray,
+    rng: np.random.Generator,
+) -> dict[str, np.ndarray]:
+    trials, k = rewards.shape
+    rows = np.arange(trials)
+    initial_mask = np.zeros((trials, k), dtype=bool)
+    initial_mask[rows, initial] = True
+    options = ~opened & ~initial_mask
+
+    stay = rewards[rows, initial]
+
+    uniform_idx, has_uniform = _batched_random_choice(options, rng)
+    uniform = stay.copy()
+    uniform[has_uniform] = rewards[rows[has_uniform], uniform_idx[has_uniform]]
+
+    prior_idx = np.argmax(np.where(options, means[None, :], -np.inf), axis=1)
+    has_prior = np.any(options, axis=1)
+    prior = stay.copy()
+    prior[has_prior] = rewards[rows[has_prior], prior_idx[has_prior]]
+
+    oracle_idx = np.argmax(np.where(options, rewards, -np.inf), axis=1)
+    has_oracle = np.any(options, axis=1)
+    oracle = stay.copy()
+    oracle[has_oracle] = rewards[rows[has_oracle], oracle_idx[has_oracle]]
+
+    return {
+        "stay": stay,
+        "uniform_switch": uniform,
+        "prior_best_switch": prior,
+        "oracle_best_switch": oracle,
+    }
+
+
 def simulate_door_specific(
     k: int = 10,
     r: int = 2,
@@ -460,33 +567,25 @@ def simulate_door_specific(
     if len(priors) != k:
         raise ValueError("Need one prior per door")
 
-    strategy_values = {
-        "stay": [],
-        "uniform_switch": [],
-        "prior_best_switch": [],
-        "oracle_best_switch": [],
-    }
-    chosen_initial_means: list[float] = []
-    opened_counts: list[int] = []
-
-    for _ in range(trials):
-        rewards = sample_realized_rewards(priors, rng)
-        initial = choose_initial(priors, initial_strategy, rng)
-        opened = reveal_sequential(rewards, priors, initial, r, monty_policy, rng)
-        chosen_initial_means.append(priors[initial].mean)
-        opened_counts.append(len(opened))
-        for strategy in strategy_values:
-            door = choose_switch(priors, rewards, initial, opened, strategy, rng)
-            strategy_values[strategy].append(rewards[door])
+    zero_probs, reward_values, means_array = _prior_arrays(priors)
+    np_rng = np.random.default_rng(seed)
+    reward_draws = np.where(
+        np_rng.random((trials, k)) < zero_probs[None, :],
+        0.0,
+        reward_values[None, :],
+    )
+    initial = _batched_initial_indices(means_array, initial_strategy, trials, np_rng)
+    opened = _batched_reveals(reward_draws, means_array, initial, r, monty_policy, np_rng)
+    strategy_vectors = _batched_strategy_values(reward_draws, means_array, initial, opened, np_rng)
 
     means = {
-        "chosen_initial_mu": statistics.fmean(chosen_initial_means),
-        "opened_count": statistics.fmean(opened_counts),
-        "prior_mu_min": min(prior.mean for prior in priors),
-        "prior_mu_max": max(prior.mean for prior in priors),
-        "prior_mu_mean": statistics.fmean(prior.mean for prior in priors),
+        "chosen_initial_mu": float(np.mean(means_array[initial])),
+        "opened_count": float(np.mean(opened.sum(axis=1))),
+        "prior_mu_min": float(np.min(means_array)),
+        "prior_mu_max": float(np.max(means_array)),
+        "prior_mu_mean": float(np.mean(means_array)),
     }
-    empirical = {name: statistics.fmean(values) for name, values in strategy_values.items()}
+    empirical = {name: float(np.mean(values)) for name, values in strategy_vectors.items()}
     return DoorSpecificOutput(
         k=k,
         r=r,
@@ -878,6 +977,51 @@ def stage2_partial_collapse_rows(
     return collapse_rows
 
 
+def _landscape_job(
+    landscape_id: int,
+    k: int,
+    r_values: list[int],
+    trials: int,
+    repeats: int,
+    q_alpha: float,
+    q_beta: float,
+    log_mu: float,
+    log_sigma: float,
+    seed: int | None,
+) -> tuple[list[dict[str, float | str]], list[dict[str, float | str]]]:
+    landscape_seed = None if seed is None else seed + 1_000_000_000 + landscape_id
+    priors_rng = random.Random(landscape_seed)
+    priors = sample_door_priors(
+        k,
+        priors_rng,
+        q_alpha=q_alpha,
+        q_beta=q_beta,
+        log_mu=log_mu,
+        log_sigma=log_sigma,
+    )
+    priors_rows: list[dict[str, float | str]] = []
+    for door, prior in enumerate(priors):
+        priors_rows.append(
+            {
+                "landscape_id": float(landscape_id),
+                "door": float(door),
+                "prize_prob": 1.0 - prior.zero_prob,
+                "reward_value": prior.reward_value,
+                "prior_mean": prior.mean,
+            }
+        )
+    raw_rows = stage2_rows(
+        priors,
+        r_values,
+        trials,
+        None if seed is None else seed + 10_000_000 * landscape_id,
+        repeats,
+    )
+    averaged = average_stage2_rows(raw_rows)
+    collapse_rows = stage2_partial_collapse_rows(averaged, landscape_id=landscape_id)
+    return priors_rows, collapse_rows
+
+
 def plot_stage2_family_partial_collapse(rows: list[dict[str, float | str]], path: Path) -> Path:
     initials = ["random", "highest_mu", "lowest_mu"]
     colors = {
@@ -979,6 +1123,7 @@ def parse_args() -> argparse.Namespace:
     s2c.add_argument("--q-beta", type=float, default=2.0)
     s2c.add_argument("--log-mu", type=float, default=0.0)
     s2c.add_argument("--log-sigma", type=float, default=1.0)
+    s2c.add_argument("--workers", type=int, default=0, help="Parallel worker processes; 0 means auto.")
     s2c.add_argument("--output-prefix", type=str, default="outputs/stage2_family")
     return parser.parse_args()
 
@@ -1085,37 +1230,47 @@ def main() -> None:
         if args.repeats < 1:
             raise ValueError("Need repeats >= 1")
         prefix = Path(args.output_prefix)
-        landscape_rng = random.Random(args.seed)
         priors_rows: list[dict[str, float | str]] = []
         collapse_rows: list[dict[str, float | str]] = []
-        for landscape_id in range(args.landscapes):
-            priors = sample_door_priors(
-                args.k,
-                landscape_rng,
-                q_alpha=args.q_alpha,
-                q_beta=args.q_beta,
-                log_mu=args.log_mu,
-                log_sigma=args.log_sigma,
-            )
-            for door, prior in enumerate(priors):
-                priors_rows.append(
-                    {
-                        "landscape_id": float(landscape_id),
-                        "door": float(door),
-                        "prize_prob": 1.0 - prior.zero_prob,
-                        "reward_value": prior.reward_value,
-                        "prior_mean": prior.mean,
-                    }
+        workers = args.workers if args.workers > 0 else min(args.landscapes, os.cpu_count() or 1)
+        if workers == 1:
+            for landscape_id in range(args.landscapes):
+                priors_part, collapse_part = _landscape_job(
+                    landscape_id,
+                    args.k,
+                    r_values,
+                    args.trials,
+                    args.repeats,
+                    args.q_alpha,
+                    args.q_beta,
+                    args.log_mu,
+                    args.log_sigma,
+                    args.seed,
                 )
-            raw_rows = stage2_rows(
-                priors,
-                r_values,
-                args.trials,
-                None if args.seed is None else args.seed + 10_000_000 * landscape_id,
-                args.repeats,
-            )
-            averaged = average_stage2_rows(raw_rows)
-            collapse_rows.extend(stage2_partial_collapse_rows(averaged, landscape_id=landscape_id))
+                priors_rows.extend(priors_part)
+                collapse_rows.extend(collapse_part)
+        else:
+            with ProcessPoolExecutor(max_workers=workers) as executor:
+                futures = [
+                    executor.submit(
+                        _landscape_job,
+                        landscape_id,
+                        args.k,
+                        r_values,
+                        args.trials,
+                        args.repeats,
+                        args.q_alpha,
+                        args.q_beta,
+                        args.log_mu,
+                        args.log_sigma,
+                        args.seed,
+                    )
+                    for landscape_id in range(args.landscapes)
+                ]
+                for future in futures:
+                    priors_part, collapse_part = future.result()
+                    priors_rows.extend(priors_part)
+                    collapse_rows.extend(collapse_part)
         priors_path = write_rows_csv(priors_rows, Path(f"{prefix}_landscapes.csv"))
         print("wrote", priors_path)
         collapse_path = write_rows_csv(collapse_rows, Path(f"{prefix}_collapse_table.csv"))
