@@ -1,0 +1,10 @@
+{
+  "command": "door-specific-stage2-collapse",
+  "k": 5,
+  "landscapes": 18,
+  "trials": 20000,
+  "repeats": 4,
+  "workers": 0,
+  "seed": 19,
+  "output_prefix": "outputs/stage2_family"
+}

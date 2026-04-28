@@ -9,6 +9,18 @@ cd /Users/gn/work/learn/python/monty_hall
 Use `MPLCONFIGDIR=.mplconfig` with plotting commands so Matplotlib writes its
 font cache inside the project.
 
+Preset JSONs for the longer Stage 2 runs live in:
+
+```text
+config/
+```
+
+And their explanations are in:
+
+```text
+docs/config_presets.md
+```
+
 ## Tests
 
 Run the full Python test suite:
@@ -277,6 +289,54 @@ The Part IV paper uses this robustness figure as well:
 
 - `stage2_family_partial_collapse_family.png`
 
+The family command also supports:
+
+- `--workers 1`
+  run sequentially
+- `--workers 0`
+  or omit the flag to auto-use available CPU cores
+- `--workers N`
+  force a specific number of worker processes
+
+The landscape sweep parallelizes over landscapes. The inner trial work is also
+NumPy-vectorized, so this command is now much faster than the original pure
+Python version.
+
+## Stage 2 Presets
+
+### Interactive
+
+Use this when you want a quick look and do not want to wait:
+
+```sh
+python -B src/monty_hall_heterogeneous.py door-specific-stage2-collapse --K 5 --landscapes 6 --trials 5000 --repeats 3 --workers 4 --seed 19 --output-prefix outputs/stage2_family_interactive
+```
+
+### Medium
+
+Use this for a decent robustness pass without turning it into a long batch job:
+
+```sh
+python -B src/monty_hall_heterogeneous.py door-specific-stage2-collapse --K 5 --landscapes 18 --trials 20000 --repeats 4 --seed 19 --output-prefix outputs/stage2_family
+```
+
+### Heavy
+
+Use this when you want the stronger offline run:
+
+```sh
+python -B src/monty_hall_heterogeneous.py door-specific-stage2-collapse --K 10 --landscapes 40 --trials 40000 --repeats 30 --workers 8 --seed 19 --output-prefix outputs/stage2_family_K10_l40_tr40000_rep30
+```
+
+### Canonical Repeat-Averaged Single Landscape
+
+Use this when you want the Stage 2 paper example, averaged over several RNG
+seeds for one fixed labeled prior landscape:
+
+```sh
+python -B src/monty_hall_heterogeneous.py door-specific-stage2 --door-priors '0.1:1,0.2:1.5,0.8:4,0.3:2,0.05:10' --trials 30000 --repeats 5 --seed 11 --output-prefix outputs/stage2_labeled
+```
+
 The Part IV paper now also uses these Stage 2 labeled-prior figures:
 
 - `stage2_labeled_prior_landscape.png`
@@ -338,3 +398,4 @@ make clean
 - Part IV Stage 2 shows that once door labels carry priors, initial choice and switch rule interact strongly and the scalar collapse disappears.
 - Part IV Stage 2 also includes a weaker partial-collapse diagnostic, normalized by the oracle switch value, to explore whether any class-dependent rescaling survives after label symmetry is broken.
 - The repeat-averaged and family-of-landscapes Stage 2 runs are the robust versions of that partial-collapse test.
+- The family Stage 2 command is now both NumPy-vectorized and parallelized over landscapes, so `--workers` is the main runtime control knob after `landscapes`, `trials`, and `repeats`.

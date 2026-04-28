@@ -1,0 +1,8 @@
+{
+  "command": "door-specific-stage2",
+  "door_priors": "0.1:1,0.2:1.5,0.8:4,0.3:2,0.05:10",
+  "trials": 30000,
+  "repeats": 5,
+  "seed": 11,
+  "output_prefix": "outputs/stage2_labeled"
+}
