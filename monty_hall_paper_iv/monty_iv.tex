@@ -443,9 +443,71 @@ once doors are labeled, the decision problem is genuinely strategic, not just a
 scalar reveal-depth optimization.
 \end{quote}
 
-\section{Conjectural Part IV Questions}
+\section{Why the Exchangeable Collapse Fails in Stage 2}
 
-The next coding and theory questions should be:
+The Stage 1 collapse worked because the exchangeable model had two symmetry
+properties:
+\begin{itemize}
+\item all door labels were ex ante identical;
+\item uniform switching was equivalent to switching by any other label-blind
+rule.
+\end{itemize}
+Those symmetries disappear in Stage 2. Once door $j$ has its own prior mean
+$\mu_j=p_jv_j$, the player is no longer averaging over an unlabeled reward
+multiset. The value of a reveal now depends on \emph{which} door was initially
+chosen, \emph{which} zero doors remain revealable, and \emph{which} candidate
+switch doors survive.
+
+That is why no single scalar such as total reward mass $V$ can organize the
+labeled model. In Stage 2, the relevant object is the posterior geometry of the
+surviving doors. Two landscapes with the same total prior mass can behave quite
+differently if one has a single dominant door while the other spreads mass more
+evenly across several alternatives.
+
+\section{A Weaker Collapse Candidate}
+
+Although the strong Stage 1 collapse fails, one can still ask whether a weaker
+rescaling survives. A natural exploratory choice is to compare a feasible
+label-aware policy against the Stage 2 upper bound:
+\[
+  \frac{\texttt{prior\_best\_switch}}{\texttt{oracle\_best\_switch}}.
+\]
+This removes the raw reward scale and asks instead how efficiently the
+player's label-aware heuristic tracks the best ex post switch door as reveal
+depth increases.
+
+Figure~\ref{fig:stage2-partial-collapse} plots this quantity against reveal
+fraction in the canonical skewed example. The result is not a universal
+collapse. However, it does show a suggestive weaker pattern: the `random' and
+`lowest\_mu' starts lie fairly close together, while the `highest\_mu' start
+remains distinct. So a partial collapse may exist \emph{within classes of
+initial conditions}, even though the full scalar exchangeable collapse is gone.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.88\linewidth]{../outputs/stage2_labeled_partial_collapse.png}
+  \caption{A weaker Stage 2 collapse attempt. The plotted quantity is
+  $\texttt{prior\_best\_switch}/\texttt{oracle\_best\_switch}$ against reveal
+  fraction, under Monty=`uniform\_zero'. The curves do not collapse fully, but
+  the `random' and `lowest\_mu' starts track each other much more closely than
+  either tracks the `highest\_mu' start.}
+  \label{fig:stage2-partial-collapse}
+\end{figure}
+
+This is the right way to think about labeled unequal rewards. The old scalar
+collapse should not be expected to survive wholesale. The real question is
+whether there are \emph{conditional} or \emph{class-dependent} collapses after
+one controls for coarse structural features such as:
+\begin{itemize}
+\item initial-choice class;
+\item shape of the prior-mean landscape;
+\item number of near-best alternatives;
+\item reveal fraction rather than raw reveal count.
+\end{itemize}
+
+\section{Next Part IV Questions}
+
+With Stage 2 live, the next coding and theory questions are:
 \begin{enumerate}
 \item In the labeled unequal-prize model, when does prior-best switching beat
 uniform switching by a large margin?
@@ -469,11 +531,17 @@ with only a rescaling of value. The new Stage 1 evidence shows that this is not
 just a formal theorem: simulation produces the same reveal-depth curves for
 very different unequal prize vectors once total reward mass is held fixed.
 
-In the labeled regime, unequal rewards become genuinely interesting. Then the
-problem is no longer about a single quantity like $t$ or $V$, but about how
-posterior reward mass is distributed across doors, how Monty reveals zeros, and
-how the initial choice preserves or destroys later switching opportunities.
+In the labeled regime, that scalar picture breaks. Stage 2 now makes this live
+rather than conjectural: initial choice matters, switching rules separate, and
+Monty's legal reveal policy can change the payoff surface. The problem is no
+longer organized by a single quantity like $t$ or $V$, but by how posterior
+reward mass is distributed across surviving doors.
 
-That labeled unequal-prize regime is the natural next coding target.
+The right continuation of Part IV is therefore not to search for a naive
+extension of the Stage 1 collapse, but to identify what weaker coarse-grained
+descriptions might survive in the labeled model. The partial-collapse plot in
+Figure~\ref{fig:stage2-partial-collapse} suggests one possible direction:
+collapses may reappear only after conditioning on structural classes such as
+the initial-choice regime or the shape of the prior landscape.
 
 \end{document}

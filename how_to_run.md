@@ -254,12 +254,14 @@ The Stage 2 analysis command writes:
 - `..._strategy_panel.png`
 - `..._monty_panel.png`
 - `..._policy_gain_heatmap.png`
+- `..._partial_collapse.png`
 
 The Part IV paper now also uses these Stage 2 labeled-prior figures:
 
 - `stage2_labeled_prior_landscape.png`
 - `stage2_labeled_strategy_panel.png`
 - `stage2_labeled_policy_gain_heatmap.png`
+- `stage2_labeled_partial_collapse.png`
 
 So the standard full Part IV workflow is:
 
@@ -312,3 +314,4 @@ make clean
 - Door-specific priors make switching rules, Monty policy, and initial choice matter.
 - Part IV Stage 1 shows that unequal prize vectors with the same total reward mass `V` collapse empirically under exchangeability.
 - Part IV Stage 2 shows that once door labels carry priors, initial choice and switch rule interact strongly and the scalar collapse disappears.
+- Part IV Stage 2 also includes a weaker partial-collapse diagnostic, normalized by the oracle switch value, to explore whether any class-dependent rescaling survives after label symmetry is broken.

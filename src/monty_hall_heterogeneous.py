@@ -762,6 +762,50 @@ def plot_stage2_gain_heatmap(rows: list[dict[str, float | str]], path: Path) -> 
     return path
 
 
+def plot_stage2_partial_collapse(rows: list[dict[str, float | str]], path: Path) -> Path:
+    initials = ["random", "highest_mu", "lowest_mu"]
+    colors = {
+        "random": "#22577a",
+        "highest_mu": "#b23a30",
+        "lowest_mu": "#0f766e",
+    }
+    fig, ax = plt.subplots(figsize=(7.8, 4.8))
+    max_r = max(int(row["r"]) for row in rows)
+    for initial in initials:
+        points: list[tuple[float, float]] = []
+        for r in range(max_r + 1):
+            subset = [
+                row
+                for row in rows
+                if int(row["r"]) == r
+                and row["initial_strategy"] == initial
+                and row["monty_policy"] == "uniform_zero"
+            ]
+            values = {str(row["switch_strategy"]): float(row["empirical_reward"]) for row in subset}
+            if "oracle_best_switch" not in values or "prior_best_switch" not in values:
+                continue
+            points.append((r / max(1, max_r), values["prior_best_switch"] / values["oracle_best_switch"]))
+        ax.plot(
+            [x for x, _ in points],
+            [y for _, y in points],
+            marker="o",
+            linewidth=2.2,
+            markersize=4,
+            color=colors[initial],
+            label=initial,
+        )
+    ax.set_xlabel("reveal fraction")
+    ax.set_ylabel("prior_best_switch / oracle_best_switch")
+    ax.set_title("Stage 2 partial collapse attempt")
+    ax.grid(axis="y", alpha=0.25)
+    ax.legend(frameon=False)
+    fig.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -894,6 +938,8 @@ def main() -> None:
         print("wrote", monty_plot)
         heatmap = plot_stage2_gain_heatmap(rows, Path(f"{prefix}_policy_gain_heatmap.png"))
         print("wrote", heatmap)
+        partial_collapse = plot_stage2_partial_collapse(rows, Path(f"{prefix}_partial_collapse.png"))
+        print("wrote", partial_collapse)
 
 
 if __name__ == "__main__":
