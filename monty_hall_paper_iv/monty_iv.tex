@@ -34,29 +34,30 @@
 
 \begin{abstract}
 Parts I--III developed the generalized Monty Hall problem from identical prizes,
-to variable reveal costs, to heterogeneous rewards and labeled priors.  This
+to variable reveal costs, to heterogeneous rewards and labeled priors. This
 note isolates the intermediate case of multiple prizes with unequal values.
 There are $K$ doors, exactly $m\ge1$ prize doors, and prize values
-$v_1,\dots,v_m$, which need not be equal.  We first study the exchangeable
+$v_1,\dots,v_m$, which need not be equal. We first study the exchangeable
 model in which the multiset $\{v_1,\dots,v_m,0,\dots,0\}$ is placed uniformly
-at random among door labels.  In that case, unequal rewards still collapse to
-a single scalar, the total reward mass
+at random among door labels. In that case, unequal rewards still collapse to a
+single scalar, the total reward mass
 \[
   V=\sum_{i=1}^m v_i.
 \]
 Under uniform switching after $t$ zero reveals, expected stay value is $V/K$
-and expected switch value is $V(K-1)/[K(K-1-t)]$.  Thus unequal prizes alone do
-not destroy the one-dimensional structure.  The real complexity appears only
+and expected switch value is $V(K-1)/[K(K-1-t)]$. Thus unequal prizes alone do
+not destroy the one-dimensional structure. The real complexity appears only
 when door labels carry prior information or when switching ceases to be
-uniform.  We formulate the exchangeable theorem, derive the constant-cost
-threshold, and identify the labeled unequal-prize problem as the genuinely new
-Part IV direction.
+uniform. We formulate the exchangeable theorem, derive the constant-cost
+threshold, and supplement the theorem with empirical Stage 1 evidence: theory
+versus simulation curves and collapse plots across distinct unequal prize
+vectors with the same total reward mass.
 \end{abstract}
 
 \section{Setup}
 
-There are $K$ doors, with $1\le m<K$ prize doors.  Prize door $i$ carries value
-$v_i>0$, and the remaining $K-m$ doors carry value $0$.  Let
+There are $K$ doors, with $1\le m<K$ prize doors. Prize door $i$ carries value
+$v_i>0$, and the remaining $K-m$ doors carry value $0$. Let
 \[
   V=\sum_{i=1}^m v_i.
 \]
@@ -75,7 +76,7 @@ non-initial doors.
 \end{itemize}
 
 The main question is: how much of the Part I and Part III structure survives
-when there are \emph{multiple prizes with unequal values}? 
+when there are \emph{multiple prizes with unequal values}?
 
 \section{Two Distinct Models}
 
@@ -86,7 +87,7 @@ The multiset
 \[
   \{v_1,\dots,v_m,0,\dots,0\}
 \]
-is placed uniformly at random among the $K$ door labels.  Door labels carry no
+is placed uniformly at random among the $K$ door labels. Door labels carry no
 prior information.
 
 \paragraph{Labeled unequal prizes.}
@@ -99,8 +100,8 @@ and pins down what unequal prizes do \emph{not} change.
 \section{Exchangeable Unequal Prizes}
 
 Assume the values $v_1,\dots,v_m$ are fixed, but their placement among the $K$
-doors is uniform over labels.  The player chooses an initial door uniformly.
-Monty reveals $t$ zero-value doors.  The player then switches uniformly among
+doors is uniform over labels. The player chooses an initial door uniformly.
+Monty reveals $t$ zero-value doors. The player then switches uniformly among
 the remaining unopened non-initial doors.
 
 \begin{theorem}[Collapse to total reward mass]
@@ -117,7 +118,7 @@ and
 \end{theorem}
 
 \begin{proof}
-By exchangeability, every door has the same ex ante expected reward.  Since the
+By exchangeability, every door has the same ex ante expected reward. Since the
 sum of rewards over all doors is $V$, the expected reward of the initial door is
 $V/K$.
 
@@ -126,9 +127,9 @@ The expected reward mass outside the initial door is therefore
   V-\frac{V}{K}=\frac{V(K-1)}{K}.
 \]
 Monty reveals only zero-value doors, so this expected outside reward mass is not
-altered by the reveals.  After $t$ reveals, the remaining non-initial closed
-set has size $K-1-t$, and symmetry implies that uniform switching spreads this
-outside reward mass evenly across those switch targets.  Hence
+altered by the reveals. After $t$ reveals, the remaining non-initial closed set
+has size $K-1-t$, and symmetry implies that uniform switching spreads this
+outside reward mass evenly across those switch targets. Hence
 \[
   \E[\text{switch reward after }t\text{ reveals}]
   =
@@ -170,7 +171,7 @@ qualitatively new.
 
 \section{Constant Reveal Costs}
 
-Suppose each reveal costs a constant amount $c$.  Then the net switch value
+Suppose each reveal costs a constant amount $c$. Then the net switch value
 after $t$ reveals is
 \[
   W(t)=\frac{V(K-1)}{K(K-1-t)}-ct.
@@ -182,7 +183,7 @@ Its one-step increment is
   \frac{V(K-1)}{K(K-2-t)(K-1-t)}-c.
 \]
 Because the benefit term is increasing in $t$, the same endpoint logic as in
-Part I survives.  In particular, the comparison between full reveal and no
+Part I survives. In particular, the comparison between full reveal and no
 reveal is
 \[
   \frac{V(K-1)}{Km}-c(K-m-1)
@@ -202,11 +203,79 @@ When all prizes are unit prizes, $V=m$, so the threshold becomes
 recovering Part I exactly.
 \end{remark}
 
+\section{Stage 1 Empirical Evidence}
+
+Stage 1 coding verifies that the exchangeable unequal-prize theorem is not just
+a symbolic rescaling. The simulation draws explicit prize vectors, places them
+uniformly among doors, reveals only legal zero doors, and estimates both stay
+and switch values from Monte Carlo runs.
+
+For the baseline experiment, we fix $K=12$, $m=4$, and use the unequal prize
+vector $(1,2,5,9)$, so $V=17$. Figure~\ref{fig:theory-empirical} compares
+the empirical estimates against the exact formulas over all feasible reveal
+depths $t=0,1,\dots,K-m-1$. The agreement is close throughout. In the current
+Stage 1 run, the largest absolute stay error is about $0.017$ and the largest
+absolute switch error is about $0.037$, both well within ordinary Monte Carlo
+noise for a finite simulation of this size.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\linewidth]{../outputs/stage1_exchangeable_theory_vs_empirical.png}
+  \caption{Stage 1 baseline verification for $K=12$, $m=4$, and reward vector
+  $(1,2,5,9)$. Stay value is flat at $V/K$, while switch value rises with
+  reveal depth exactly as predicted by $V(K-1)/[K(K-1-t)]$. The empirical
+  points track the theoretical curves closely.}
+  \label{fig:theory-empirical}
+\end{figure}
+
+The more important question is whether the collapse to total reward mass $V$ can
+be seen directly in simulation when the prize vector itself changes shape.
+Stage 1 therefore compares three distinct reward vectors,
+\[
+  (1,2,5,9),\qquad (4,4,4,5),\qquad (8,4,3,2),
+\]
+all of which satisfy $V=17$. These vectors differ substantially in how reward
+mass is distributed across the $m=4$ prize doors, but under the exchangeable
+model they should produce the same expected stay and switch values.
+
+Figure~\ref{fig:same-v-collapse} shows exactly that. When plotted in raw reward
+units, the empirical curves for same-$V$ reward vectors lie nearly on top of one
+another, and they all follow the same theoretical shape. Figure~\ref{fig:normalized-collapse}
+then divides reward by total mass $V$, making the scale-free claim visually
+explicit: after normalization, the curves collapse onto the same geometry.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\linewidth]{../outputs/stage1_exchangeable_same_v_collapse.png}
+  \caption{Same-$V$ collapse in raw reward units. Three distinct unequal prize
+  vectors with the same total mass $V=17$ produce nearly identical empirical
+  stay and switch curves across reveal depth.}
+  \label{fig:same-v-collapse}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\linewidth]{../outputs/stage1_exchangeable_normalized_collapse.png}
+  \caption{Normalized collapse after dividing by total reward mass $V$. This is
+  the clearest empirical expression of the theorem: once values are normalized
+  by $V$, the exchangeable unequal-prize model has the same reveal-depth
+  geometry regardless of how the positive reward mass is partitioned among the
+  $m$ prize doors.}
+  \label{fig:normalized-collapse}
+\end{figure}
+
+These plots matter because they rule out a tempting but false intuition. One
+might suspect that a ``spikier'' prize vector such as $(1,2,5,9)$ should behave
+differently from a flatter vector such as $(4,4,4,5)$ even in the exchangeable
+case. Stage 1 shows that this is not so. As long as labels are uninformative and
+switching is uniform, the simulation respects the theorem: only total reward
+mass matters.
+
 \section{What Unequal Prizes Do Not Yet Change}
 
 The exchangeable unequal-prize model leaves the problem essentially
-one-dimensional.  The relevant state variable is still just the reveal count
-$t$, because label symmetry survives.  The consequences are:
+one-dimensional. The relevant state variable is still just the reveal count
+$t$, because label symmetry survives. The consequences are:
 \begin{itemize}
 \item stay and switch values depend only on total reward mass $V$;
 \item the exact success-law geometry from Part I survives after a scalar
@@ -223,13 +292,13 @@ They create a new payoff scale.
 \section{Where the Genuinely New Problem Begins}
 
 The interesting Part IV problem is therefore not merely ``multiple prizes with
-unequal rewards.''  It is:
+unequal rewards.'' It is:
 \begin{quote}
 multiple unequal rewards \emph{with labeled prior information over doors}.
 \end{quote}
 
-Once labels matter, the state ceases to be scalar.  The player must track a
-posterior reward landscape over remaining doors.  Then:
+Once labels matter, the state ceases to be scalar. The player must track a
+posterior reward landscape over remaining doors. Then:
 \begin{itemize}
 \item the initial door can again become strategic;
 \item different switch rules no longer coincide;
@@ -276,10 +345,12 @@ Part III.
 Multiple prizes with unequal rewards split cleanly into two regimes.
 
 In the exchangeable regime, unequal rewards collapse to total reward mass
-\(V\).  The theory remains scalar, and the Part I and Part II arguments survive
-with only a rescaling of value.
+$V$. The theory remains scalar, and the Part I and Part II arguments survive
+with only a rescaling of value. The new Stage 1 evidence shows that this is not
+just a formal theorem: simulation produces the same reveal-depth curves for
+very different unequal prize vectors once total reward mass is held fixed.
 
-In the labeled regime, unequal rewards become genuinely interesting.  Then the
+In the labeled regime, unequal rewards become genuinely interesting. Then the
 problem is no longer about a single quantity like $t$ or $V$, but about how
 posterior reward mass is distributed across doors, how Monty reveals zeros, and
 how the initial choice preserves or destroys later switching opportunities.

@@ -206,6 +206,33 @@ The Stage 1 analysis command writes:
 - `..._same_v_collapse.png`
 - `..._normalized_collapse.png`
 
+Build the Part IV paper:
+
+```sh
+cd monty_hall_paper_iv
+make
+```
+
+Main output:
+
+```text
+monty_hall_paper_iv/monty_iv.pdf
+```
+
+The Part IV paper now directly includes the Stage 1 figures from `outputs/`:
+
+- `stage1_exchangeable_theory_vs_empirical.png`
+- `stage1_exchangeable_same_v_collapse.png`
+- `stage1_exchangeable_normalized_collapse.png`
+
+So the standard Part IV workflow is:
+
+```sh
+python -B src/monty_hall_heterogeneous.py exchangeable-stage1 --K 12 --m 4 --reward-vectors '1,2,5,9;4,4,4,5;8,4,3,2' --trials 100000 --seed 3 --output-prefix outputs/stage1_exchangeable
+cd monty_hall_paper_iv
+make
+```
+
 ## Clean Build Artifacts
 
 Clean Part I LaTeX artifacts:
@@ -229,6 +256,13 @@ cd monty_hall_paper_iii
 make clean
 ```
 
+Clean Part IV LaTeX artifacts:
+
+```sh
+cd monty_hall_paper_iv
+make clean
+```
+
 ## Notes
 
 - Part I is the constant-cost baseline with exact threshold `c* = 1/K`.
@@ -239,3 +273,4 @@ make clean
 - Part III separates exchangeable heterogeneous rewards from door-specific priors.
 - Exchangeable heterogeneous rewards collapse to total reward mass under uniform switching.
 - Door-specific priors make switching rules, Monty policy, and initial choice matter.
+- Part IV Stage 1 shows that unequal prize vectors with the same total reward mass `V` collapse empirically under exchangeability.
