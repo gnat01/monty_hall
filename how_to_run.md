@@ -21,6 +21,14 @@ And their explanations are in:
 docs/config_presets.md
 ```
 
+You can run them directly with:
+
+```sh
+python -B src/monty_hall_heterogeneous.py --config config/stage2_family_medium.json
+```
+
+Any flags you add after `--config` override the preset.
+
 ## Tests
 
 Run the full Python test suite:
@@ -131,11 +139,59 @@ The heterogeneous-reward code is:
 src/monty_hall_heterogeneous.py
 ```
 
+General help:
+
+```sh
+python -B src/monty_hall_heterogeneous.py --help
+```
+
+Subcommand help:
+
+```sh
+python -B src/monty_hall_heterogeneous.py exchangeable --help
+python -B src/monty_hall_heterogeneous.py door-specific --help
+python -B src/monty_hall_heterogeneous.py find-sacrifice --help
+python -B src/monty_hall_heterogeneous.py exchangeable-stage1 --help
+python -B src/monty_hall_heterogeneous.py door-specific-stage2 --help
+python -B src/monty_hall_heterogeneous.py door-specific-stage2-collapse --help
+```
+
+Global option:
+
+- `--config PATH`
+  optional JSON preset file
+  CLI flags written after `--config` override the preset values
+
 Run the exchangeable reward-multiset model:
 
 ```sh
 python -B src/monty_hall_heterogeneous.py exchangeable --K 12 --m 4 --r 4 --reward-dist lognormal --trials 100000 --seed 3
 ```
+
+Flags for `exchangeable`:
+
+- `--K`, `--k`
+  number of doors
+  default: `10`
+- `--m`
+  number of positive-reward prize doors
+  default: `3`
+- `--r`
+  number of zero-door reveals
+  default: `2`
+- `--reward-dist`
+  one of:
+  `fixed`, `uniform`, `exponential`, `lognormal`, `pareto`
+  default: `lognormal`
+- `--reward-values`
+  optional explicit comma-separated unequal positive prize values
+  if set, must have length `m`
+- `--trials`
+  Monte Carlo trials
+  default: `100000`
+- `--seed`
+  RNG seed
+  default: unset
 
 Run the exchangeable unequal-prize Stage IV baseline with explicit reward values:
 
@@ -155,6 +211,34 @@ Run the door-specific Bernoulli-value prior model:
 python -B src/monty_hall_heterogeneous.py door-specific --K 10 --r 2 --trials 100000 --seed 4 --initial lowest_mu --monty uniform_zero --plot
 ```
 
+Flags for `door-specific`:
+
+- `--K`, `--k`
+  number of doors
+  default: `10`
+- `--r`
+  reveal count
+  default: `2`
+- `--trials`
+  Monte Carlo trials
+  default: `100000`
+- `--seed`
+  RNG seed
+  default: unset
+- `--initial`
+  one of:
+  `random`, `highest_mu`, `lowest_mu`
+  default: `random`
+- `--monty`
+  one of:
+  `uniform_zero`, `low_mu_zero`, `high_mu_zero`
+  default: `uniform_zero`
+- `--plot`
+  save the bar plot for that run
+- `--door-priors`
+  optional explicit comma-separated `p:v` pairs
+  where `p` is prize probability and `v` is reward value
+
 Run the same model with explicit labeled priors, where each pair is `p:v` and
 means `prize probability : reward value`:
 
@@ -167,6 +251,24 @@ Search for a sacrifice-initial-choice example:
 ```sh
 python -B src/monty_hall_heterogeneous.py find-sacrifice --K 4 --r 1 --tries 100 --trials 20000 --seed 5
 ```
+
+Flags for `find-sacrifice`:
+
+- `--K`, `--k`
+  number of doors
+  default: `4`
+- `--r`
+  reveal count
+  default: `1`
+- `--tries`
+  number of randomly sampled prior landscapes
+  default: `200`
+- `--trials`
+  Monte Carlo trials per evaluation
+  default: `20000`
+- `--seed`
+  RNG seed
+  default: unset
 
 Build the Part III paper:
 
@@ -225,6 +327,29 @@ The Stage 1 analysis command writes:
 - `..._same_v_collapse.png`
 - `..._normalized_collapse.png`
 
+Flags for `exchangeable-stage1`:
+
+- `--K`, `--k`
+  required
+  number of doors
+- `--m`
+  required
+  number of positive-reward prize doors
+- `--reward-vectors`
+  required
+  semicolon-separated reward vectors, each vector comma-separated
+  example:
+  `'1,2,5,9;4,4,4,5;8,4,3,2'`
+- `--trials`
+  Monte Carlo trials per reveal-depth run
+  default: `100000`
+- `--seed`
+  RNG seed
+  default: unset
+- `--output-prefix`
+  output prefix
+  default: `outputs/stage1_exchangeable`
+
 Build the Part IV paper:
 
 ```sh
@@ -273,6 +398,30 @@ The `..._strategy_table.csv` file is repeat-averaged. The optional
 `..._strategy_repeats.csv` file contains the raw per-seed runs that feed the
 average.
 
+Flags for `door-specific-stage2`:
+
+- `--door-priors`
+  required
+  comma-separated `p:v` pairs
+  example:
+  `'0.1:1,0.2:1.5,0.8:4,0.3:2,0.05:10'`
+- `--r-values`
+  optional comma-separated reveal counts
+  default: `0..K-2`
+  where `K` is inferred from the number of door priors
+- `--trials`
+  Monte Carlo trials per repeat
+  default: `100000`
+- `--repeats`
+  number of independent RNG runs to average
+  default: `1`
+- `--seed`
+  RNG seed
+  default: unset
+- `--output-prefix`
+  output prefix
+  default: `outputs/stage2_door_specific`
+
 Run the stronger family-of-landscapes partial-collapse experiment:
 
 ```sh
@@ -301,6 +450,46 @@ The family command also supports:
 The landscape sweep parallelizes over landscapes. The inner trial work is also
 NumPy-vectorized, so this command is now much faster than the original pure
 Python version.
+
+Flags for `door-specific-stage2-collapse`:
+
+- `--K`, `--k`
+  number of doors
+  default: `5`
+- `--r-values`
+  optional comma-separated reveal counts
+  default: `0..K-2`
+- `--landscapes`
+  number of sampled labeled prior landscapes
+  default: `18`
+- `--trials`
+  Monte Carlo trials per repeat per landscape slice
+  default: `40000`
+- `--repeats`
+  repeat count per landscape
+  default: `4`
+- `--seed`
+  RNG seed
+  default: unset
+- `--q-alpha`
+  Beta-shape parameter for zero-prob sampling
+  default: `2.0`
+- `--q-beta`
+  Beta-shape parameter for zero-prob sampling
+  default: `2.0`
+- `--log-mu`
+  lognormal location for reward-value sampling
+  default: `0.0`
+- `--log-sigma`
+  lognormal scale for reward-value sampling
+  default: `1.0`
+- `--workers`
+  worker processes
+  `0` means auto
+  default: `0`
+- `--output-prefix`
+  output prefix
+  default: `outputs/stage2_family`
 
 ## Stage 2 Presets
 

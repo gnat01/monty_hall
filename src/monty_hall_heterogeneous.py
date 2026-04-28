@@ -15,9 +15,11 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import os
 import random
 import statistics
+import sys
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -124,6 +126,42 @@ def parse_int_list(raw: str) -> list[int]:
     if not values:
         raise ValueError("Need at least one integer value")
     return values
+
+
+def config_to_argv(config: dict[str, object]) -> list[str]:
+    command = config.get("command")
+    if not isinstance(command, str) or not command:
+        raise ValueError("Config must contain a non-empty 'command' string")
+    argv = [command]
+    for key, value in config.items():
+        if key == "command" or value is None:
+            continue
+        flag = f"--{key.replace('_', '-')}"
+        if isinstance(value, bool):
+            if value:
+                argv.append(flag)
+            continue
+        if isinstance(value, list):
+            argv.extend([flag, ",".join(str(part) for part in value)])
+            continue
+        argv.extend([flag, str(value)])
+    return argv
+
+
+def resolve_cli_argv(argv: list[str] | None = None) -> list[str]:
+    raw = list(sys.argv[1:] if argv is None else argv)
+    if "--config" not in raw:
+        return raw
+    idx = raw.index("--config")
+    if idx + 1 >= len(raw):
+        raise ValueError("--config requires a path")
+    config_path = Path(raw[idx + 1])
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    if not isinstance(config, dict):
+        raise ValueError("Config file must contain a JSON object")
+    config_argv = config_to_argv(config)
+    remainder = raw[:idx] + raw[idx + 2 :]
+    return config_argv + remainder
 
 
 def sample_positive_rewards(
@@ -1066,8 +1104,9 @@ def plot_stage2_family_partial_collapse(rows: list[dict[str, float | str]], path
     return path
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", type=str, default=None, help="Optional JSON config file. CLI flags after --config override preset values.")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     ex = sub.add_parser("exchangeable", help="simulate exchangeable reward multiset")
@@ -1125,7 +1164,7 @@ def parse_args() -> argparse.Namespace:
     s2c.add_argument("--log-sigma", type=float, default=1.0)
     s2c.add_argument("--workers", type=int, default=0, help="Parallel worker processes; 0 means auto.")
     s2c.add_argument("--output-prefix", type=str, default="outputs/stage2_family")
-    return parser.parse_args()
+    return parser.parse_args(resolve_cli_argv(argv))
 
 
 def main() -> None:

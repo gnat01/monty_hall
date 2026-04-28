@@ -1,13 +1,17 @@
+import json
+import tempfile
 import unittest
 
 from monty_hall_heterogeneous import (
     DoorPrior,
     average_stage2_rows,
+    config_to_argv,
     exchangeable_curve_rows,
     exchangeable_theory,
     parse_probability_reward_pairs,
     parse_reward_values,
     parse_reward_vector_sets,
+    resolve_cli_argv,
     simulate_door_specific,
     simulate_exchangeable,
     stage2_rows,
@@ -166,6 +170,29 @@ class HeterogeneousRewardTests(unittest.TestCase):
         )
         self.assertEqual(sample["repeats"], 3.0)
         self.assertGreaterEqual(sample["empirical_reward_sd"], 0.0)
+
+    def test_config_loading_and_override(self) -> None:
+        cfg = {
+            "command": "door-specific-stage2-collapse",
+            "k": 5,
+            "landscapes": 6,
+            "trials": 5000,
+            "repeats": 3,
+            "workers": 4,
+            "seed": 19,
+            "output_prefix": "outputs/test_cfg",
+        }
+        argv = config_to_argv(cfg)
+        self.assertIn("door-specific-stage2-collapse", argv)
+        self.assertIn("--landscapes", argv)
+        self.assertIn("6", argv)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = f"{tmpdir}/cfg.json"
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(cfg, handle)
+            merged = resolve_cli_argv(["--config", path, "--landscapes", "9"])
+        self.assertEqual(merged[0], "door-specific-stage2-collapse")
+        self.assertEqual(merged[-2:], ["--landscapes", "9"])
 
 
 if __name__ == "__main__":
