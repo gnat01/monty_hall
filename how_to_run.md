@@ -125,6 +125,12 @@ Run the exchangeable reward-multiset model:
 python -B src/monty_hall_heterogeneous.py exchangeable --K 12 --m 4 --r 4 --reward-dist lognormal --trials 100000 --seed 3
 ```
 
+Run the exchangeable unequal-prize Stage IV baseline with explicit reward values:
+
+```sh
+python -B src/monty_hall_heterogeneous.py exchangeable --K 12 --m 4 --r 4 --reward-values 1,2,5,9 --trials 100000 --seed 3
+```
+
 Run the door-specific Bernoulli-value prior model:
 
 ```sh
@@ -165,6 +171,26 @@ fig_strategy_comparison.png
 fig_sacrifice_choice.png
 fig_monty_policy_effect.png
 ```
+
+## Part IV: Multiple Unequal Prize Values
+
+The working paper is:
+
+```text
+monty_hall_paper_iv/monty_iv.tex
+```
+
+The Stage 1 coding target is the exchangeable unequal-prize case:
+
+- explicit positive reward vector `v_1, ..., v_m`
+- uniform random placement over doors
+- theory should collapse to total reward mass `V = sum_i v_i`
+
+The exchangeable CLI now supports:
+
+- `--reward-values 1,2,5,9`
+
+which must contain exactly `m` strictly positive values.
 
 ## Clean Build Artifacts
 

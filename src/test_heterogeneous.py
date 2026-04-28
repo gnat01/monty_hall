@@ -3,6 +3,7 @@ import unittest
 from monty_hall_heterogeneous import (
     DoorPrior,
     exchangeable_theory,
+    parse_reward_values,
     simulate_door_specific,
     simulate_exchangeable,
 )
@@ -25,6 +26,27 @@ class HeterogeneousRewardTests(unittest.TestCase):
         out = simulate_exchangeable(k=10, m=3, r=4, reward_dist="lognormal", trials=80_000, seed=123)
         self.assert_close(out.empirical_stay, out.theory_stay)
         self.assert_close(out.empirical_switch, out.theory_switch)
+
+    def test_exchangeable_explicit_unequal_rewards_match_theory(self) -> None:
+        reward_values = [1.0, 2.0, 5.0, 9.0]
+        out = simulate_exchangeable(
+            k=12,
+            m=4,
+            r=4,
+            reward_values=reward_values,
+            trials=80_000,
+            seed=321,
+        )
+        self.assertAlmostEqual(out.mean_total_reward, sum(reward_values))
+        self.assert_close(out.empirical_stay, out.theory_stay)
+        self.assert_close(out.empirical_switch, out.theory_switch)
+
+    def test_parse_reward_values(self) -> None:
+        self.assertEqual(parse_reward_values("1, 2.5, 7"), [1.0, 2.5, 7.0])
+        with self.assertRaises(ValueError):
+            parse_reward_values("")
+        with self.assertRaises(ValueError):
+            parse_reward_values("1,0,3")
 
     def test_door_specific_prior_best_beats_uniform_in_skewed_case(self) -> None:
         priors = [

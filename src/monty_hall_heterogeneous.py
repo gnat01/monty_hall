@@ -78,6 +78,15 @@ def validate_exchangeable(k: int, m: int, r: int) -> None:
         raise ValueError("Need 0 <= r <= K - m - 1")
 
 
+def parse_reward_values(raw: str) -> list[float]:
+    values = [float(part.strip()) for part in raw.split(",") if part.strip()]
+    if not values:
+        raise ValueError("Need at least one explicit reward value")
+    if any(value <= 0 for value in values):
+        raise ValueError("Explicit reward values must be strictly positive")
+    return values
+
+
 def sample_positive_rewards(
     m: int,
     rng: random.Random,
@@ -146,17 +155,20 @@ def simulate_exchangeable(
     m: int = 3,
     r: int = 2,
     reward_dist: RewardDist = "lognormal",
+    reward_values: list[float] | None = None,
     trials: int = 100_000,
     seed: int | None = None,
 ) -> ExchangeableOutput:
     validate_exchangeable(k, m, r)
+    if reward_values is not None and len(reward_values) != m:
+        raise ValueError("Need len(reward_values) == m")
     rng = random.Random(seed)
     stay_values: list[float] = []
     switch_values: list[float] = []
     total_rewards: list[float] = []
 
     for _ in range(trials):
-        rewards = sample_positive_rewards(m, rng, reward_dist)
+        rewards = list(reward_values) if reward_values is not None else sample_positive_rewards(m, rng, reward_dist)
         total_rewards.append(sum(rewards))
         doors = place_rewards_exchangeably(k, rewards, rng)
         initial = rng.randrange(k)
@@ -172,7 +184,7 @@ def simulate_exchangeable(
         k=k,
         m=m,
         r=r,
-        reward_dist=reward_dist,
+        reward_dist="explicit" if reward_values is not None else reward_dist,
         trials=trials,
         mean_total_reward=mean_total_reward,
         empirical_stay=statistics.fmean(stay_values),
@@ -409,6 +421,7 @@ def parse_args() -> argparse.Namespace:
     ex.add_argument("--m", type=int, default=3)
     ex.add_argument("--r", type=int, default=2)
     ex.add_argument("--reward-dist", choices=["fixed", "uniform", "exponential", "lognormal", "pareto"], default="lognormal")
+    ex.add_argument("--reward-values", type=str, default=None, help="Optional comma-separated unequal positive prize values; if set, must have length m.")
     ex.add_argument("--trials", type=int, default=100_000)
     ex.add_argument("--seed", type=int, default=None)
 
@@ -433,7 +446,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     if args.cmd == "exchangeable":
-        out = simulate_exchangeable(args.k, args.m, args.r, args.reward_dist, args.trials, args.seed)
+        reward_values = parse_reward_values(args.reward_values) if args.reward_values is not None else None
+        out = simulate_exchangeable(args.k, args.m, args.r, args.reward_dist, reward_values, args.trials, args.seed)
         print(out)
     elif args.cmd == "door-specific":
         out = simulate_door_specific(
