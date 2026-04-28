@@ -95,6 +95,34 @@ def parse_reward_vector_sets(raw: str) -> list[list[float]]:
     return vectors
 
 
+def parse_probability_reward_pairs(raw: str) -> list[DoorPrior]:
+    priors: list[DoorPrior] = []
+    for chunk in raw.split(","):
+        piece = chunk.strip()
+        if not piece:
+            continue
+        if ":" not in piece:
+            raise ValueError("Each door prior must be of the form p:v")
+        prob_text, value_text = piece.split(":", 1)
+        prize_prob = float(prob_text.strip())
+        reward_value = float(value_text.strip())
+        if not (0.0 <= prize_prob <= 1.0):
+            raise ValueError("Prize probabilities must lie in [0, 1]")
+        if reward_value <= 0.0:
+            raise ValueError("Reward values must be strictly positive")
+        priors.append(DoorPrior(zero_prob=1.0 - prize_prob, reward_value=reward_value))
+    if not priors:
+        raise ValueError("Need at least one door prior")
+    return priors
+
+
+def parse_int_list(raw: str) -> list[int]:
+    values = [int(part.strip()) for part in raw.split(",") if part.strip()]
+    if not values:
+        raise ValueError("Need at least one integer value")
+    return values
+
+
 def sample_positive_rewards(
     m: int,
     rng: random.Random,
@@ -526,6 +554,214 @@ def plot_door_specific(out: DoorSpecificOutput, filename: str | None = None) -> 
     return path
 
 
+def stage2_rows(
+    priors: list[DoorPrior],
+    r_values: list[int],
+    trials: int,
+    seed: int | None,
+) -> list[dict[str, float | str]]:
+    rows: list[dict[str, float | str]] = []
+    initials: list[InitialStrategy] = ["random", "highest_mu", "lowest_mu"]
+    monty_policies: list[MontyPolicy] = ["uniform_zero", "low_mu_zero", "high_mu_zero"]
+    for r_index, r in enumerate(r_values):
+        for init_index, initial in enumerate(initials):
+            for monty_index, monty in enumerate(monty_policies):
+                run_seed = None
+                if seed is not None:
+                    run_seed = seed + 10_000 * r_index + 1_000 * init_index + 100 * monty_index
+                out = simulate_door_specific(
+                    k=len(priors),
+                    r=r,
+                    trials=trials,
+                    seed=run_seed,
+                    initial_strategy=initial,
+                    monty_policy=monty,
+                    priors=priors,
+                )
+                for switch, value in out.strategy_values.items():
+                    rows.append(
+                        {
+                            "k": float(len(priors)),
+                            "r": float(r),
+                            "trials": float(trials),
+                            "initial_strategy": initial,
+                            "monty_policy": monty,
+                            "switch_strategy": switch,
+                            "empirical_reward": value,
+                            "chosen_initial_mu": out.means["chosen_initial_mu"],
+                            "opened_count": out.means["opened_count"],
+                            "prior_mu_min": out.means["prior_mu_min"],
+                            "prior_mu_max": out.means["prior_mu_max"],
+                            "prior_mu_mean": out.means["prior_mu_mean"],
+                        }
+                    )
+    return rows
+
+
+def write_rows_csv(rows: list[dict[str, float | str]], path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def write_priors_csv(priors: list[DoorPrior], path: Path) -> Path:
+    rows = []
+    for idx, prior in enumerate(priors):
+        rows.append(
+            {
+                "door": idx,
+                "prize_prob": 1.0 - prior.zero_prob,
+                "zero_prob": prior.zero_prob,
+                "reward_value": prior.reward_value,
+                "prior_mean": prior.mean,
+            }
+        )
+    return write_rows_csv(rows, path)
+
+
+def stage2_value_lookup(
+    rows: list[dict[str, float | str]],
+    initial_strategy: str,
+    monty_policy: str,
+    switch_strategy: str,
+) -> list[tuple[int, float]]:
+    points = [
+        (int(row["r"]), float(row["empirical_reward"]))
+        for row in rows
+        if row["initial_strategy"] == initial_strategy
+        and row["monty_policy"] == monty_policy
+        and row["switch_strategy"] == switch_strategy
+    ]
+    return sorted(points)
+
+
+def plot_stage2_prior_landscape(priors: list[DoorPrior], path: Path) -> Path:
+    fig, ax = plt.subplots(figsize=(8.0, 4.8))
+    x = list(range(len(priors)))
+    means = [prior.mean for prior in priors]
+    colors = ["#22577a" if idx == max(range(len(priors)), key=lambda j: priors[j].mean) else "#8fbcd4" for idx in x]
+    ax.bar(x, means, color=colors)
+    for idx, prior in enumerate(priors):
+        ax.text(
+            idx,
+            prior.mean + 0.03 * max(means),
+            f"p={1.0-prior.zero_prob:.2f}\nv={prior.reward_value:.1f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+    ax.set_xlabel("door index")
+    ax.set_ylabel("prior mean")
+    ax.set_title("Stage 2 prior landscape")
+    ax.set_xticks(x)
+    ax.grid(axis="y", alpha=0.25)
+    fig.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
+
+
+def plot_stage2_strategy_panel(rows: list[dict[str, float | str]], path: Path) -> Path:
+    initials = ["random", "highest_mu", "lowest_mu"]
+    switches = ["stay", "uniform_switch", "prior_best_switch", "oracle_best_switch"]
+    colors = {
+        "stay": "#22577a",
+        "uniform_switch": "#0f766e",
+        "prior_best_switch": "#b7791f",
+        "oracle_best_switch": "#b23a30",
+    }
+    fig, axes = plt.subplots(1, 3, figsize=(13.4, 4.2), sharey=True)
+    for ax, initial in zip(axes, initials):
+        for switch in switches:
+            points = stage2_value_lookup(rows, initial, "uniform_zero", switch)
+            ax.plot([r for r, _ in points], [v for _, v in points], marker="o", linewidth=2.0, markersize=4, color=colors[switch], label=switch)
+        ax.set_title(f"initial={initial}\nMonty=uniform_zero")
+        ax.set_xlabel("reveals r")
+        ax.grid(axis="y", alpha=0.25)
+    axes[0].set_ylabel("empirical reward")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=4, frameon=False, bbox_to_anchor=(0.5, 1.04))
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
+
+
+def plot_stage2_monty_panel(rows: list[dict[str, float | str]], path: Path) -> Path:
+    monty_policies = ["uniform_zero", "low_mu_zero", "high_mu_zero"]
+    initials = ["random", "highest_mu", "lowest_mu"]
+    colors = {
+        "random": "#22577a",
+        "highest_mu": "#b7791f",
+        "lowest_mu": "#b23a30",
+    }
+    fig, axes = plt.subplots(1, 3, figsize=(13.4, 4.2), sharey=True)
+    for ax, monty in zip(axes, monty_policies):
+        for initial in initials:
+            points = stage2_value_lookup(rows, initial, monty, "prior_best_switch")
+            ax.plot([r for r, _ in points], [v for _, v in points], marker="o", linewidth=2.0, markersize=4, color=colors[initial], label=initial)
+        ax.set_title(f"prior_best_switch\nMonty={monty}")
+        ax.set_xlabel("reveals r")
+        ax.grid(axis="y", alpha=0.25)
+    axes[0].set_ylabel("empirical reward")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.04))
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
+
+
+def plot_stage2_gain_heatmap(rows: list[dict[str, float | str]], path: Path) -> Path:
+    finals = [int(row["r"]) for row in rows]
+    final_r = max(finals)
+    initials = ["random", "highest_mu", "lowest_mu"]
+    monty_policies = ["uniform_zero", "low_mu_zero", "high_mu_zero"]
+    matrix: list[list[float]] = []
+    for initial in initials:
+        values: list[float] = []
+        for monty in monty_policies:
+            uniform_val = next(
+                float(row["empirical_reward"])
+                for row in rows
+                if int(row["r"]) == final_r
+                and row["initial_strategy"] == initial
+                and row["monty_policy"] == monty
+                and row["switch_strategy"] == "uniform_switch"
+            )
+            prior_val = next(
+                float(row["empirical_reward"])
+                for row in rows
+                if int(row["r"]) == final_r
+                and row["initial_strategy"] == initial
+                and row["monty_policy"] == monty
+                and row["switch_strategy"] == "prior_best_switch"
+            )
+            values.append(prior_val - uniform_val)
+        matrix.append(values)
+    vmax = max(max(abs(value) for value in row) for row in matrix)
+    fig, ax = plt.subplots(figsize=(7.2, 4.4))
+    image = ax.imshow(matrix, cmap="RdYlBu_r", vmin=-vmax, vmax=vmax, aspect="auto")
+    ax.set_xticks(range(len(monty_policies)), monty_policies)
+    ax.set_yticks(range(len(initials)), initials)
+    ax.set_title(f"prior_best_switch - uniform_switch at r={final_r}")
+    for i, row in enumerate(matrix):
+        for j, value in enumerate(row):
+            ax.text(j, i, f"{value:.3f}", ha="center", va="center", fontsize=9, color="black")
+    fig.colorbar(image, ax=ax, shrink=0.85, label="reward gain")
+    fig.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -547,6 +783,7 @@ def parse_args() -> argparse.Namespace:
     ds.add_argument("--initial", choices=["random", "highest_mu", "lowest_mu"], default="random")
     ds.add_argument("--monty", choices=["uniform_zero", "low_mu_zero", "high_mu_zero"], default="uniform_zero")
     ds.add_argument("--plot", action="store_true")
+    ds.add_argument("--door-priors", type=str, default=None, help="Optional explicit door priors as p:v pairs, comma-separated, where p is prize probability.")
 
     fs = sub.add_parser("find-sacrifice", help="search for low-initial-choice advantage")
     fs.add_argument("--K", "--k", dest="k", type=int, default=4)
@@ -562,6 +799,13 @@ def parse_args() -> argparse.Namespace:
     s1.add_argument("--trials", type=int, default=100_000)
     s1.add_argument("--seed", type=int, default=None)
     s1.add_argument("--output-prefix", type=str, default="outputs/stage1_exchangeable")
+
+    s2 = sub.add_parser("door-specific-stage2", help="write Stage 2 tables and plots for labeled unequal prize priors")
+    s2.add_argument("--door-priors", type=str, required=True, help="Comma-separated p:v pairs, e.g. '0.9:4,0.6:3,0.2:8,0.3:5'")
+    s2.add_argument("--r-values", type=str, default=None, help="Optional comma-separated reveal counts. Default is 0..K-2.")
+    s2.add_argument("--trials", type=int, default=100_000)
+    s2.add_argument("--seed", type=int, default=None)
+    s2.add_argument("--output-prefix", type=str, default="outputs/stage2_door_specific")
     return parser.parse_args()
 
 
@@ -572,6 +816,7 @@ def main() -> None:
         out = simulate_exchangeable(args.k, args.m, args.r, args.reward_dist, reward_values, args.trials, args.seed)
         print(out)
     elif args.cmd == "door-specific":
+        priors = parse_probability_reward_pairs(args.door_priors) if args.door_priors is not None else None
         out = simulate_door_specific(
             k=args.k,
             r=args.r,
@@ -579,6 +824,7 @@ def main() -> None:
             seed=args.seed,
             initial_strategy=args.initial,
             monty_policy=args.monty,
+            priors=priors,
         )
         print("means:", out.means)
         print("strategy_values:", out.strategy_values)
@@ -628,6 +874,26 @@ def main() -> None:
         print("wrote", normalized_collapse)
         if len(totals) != 1:
             print("warning: reward vectors do not share the same total reward V, so the raw collapse is not expected to coincide exactly")
+    elif args.cmd == "door-specific-stage2":
+        priors = parse_probability_reward_pairs(args.door_priors)
+        k = len(priors)
+        r_values = parse_int_list(args.r_values) if args.r_values is not None else list(range(0, k - 1))
+        if any(r < 0 or r > k - 1 for r in r_values):
+            raise ValueError("Need every reveal count r to satisfy 0 <= r <= K - 1")
+        prefix = Path(args.output_prefix)
+        priors_path = write_priors_csv(priors, Path(f"{prefix}_priors.csv"))
+        print("wrote", priors_path)
+        rows = stage2_rows(priors, r_values, args.trials, args.seed)
+        table_path = write_rows_csv(rows, Path(f"{prefix}_strategy_table.csv"))
+        print("wrote", table_path)
+        prior_plot = plot_stage2_prior_landscape(priors, Path(f"{prefix}_prior_landscape.png"))
+        print("wrote", prior_plot)
+        strategy_plot = plot_stage2_strategy_panel(rows, Path(f"{prefix}_strategy_panel.png"))
+        print("wrote", strategy_plot)
+        monty_plot = plot_stage2_monty_panel(rows, Path(f"{prefix}_monty_panel.png"))
+        print("wrote", monty_plot)
+        heatmap = plot_stage2_gain_heatmap(rows, Path(f"{prefix}_policy_gain_heatmap.png"))
+        print("wrote", heatmap)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  28 APR 2026 14:56
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  28 APR 2026 16:01
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -613,9 +613,9 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <5> on input line 39.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10.95> on input line 59.
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 6
-9.
+(Font)              <10.95> on input line 60.
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 7
+0.
 
 (/usr/local/texlive/2025basic/texmf-dist/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
@@ -632,32 +632,32 @@ xmf-dist/fonts/enc/dvips/lm/lm-mathex.enc}{/usr/local/texlive/2025basic/texmf-d
 ist/fonts/enc/dvips/lm/lm-ts1.enc}]
 
 [2]
-<../outputs/stage1_exchangeable_theory_vs_empirical.png, id=73, 534.798pt x 332
+<../outputs/stage1_exchangeable_theory_vs_empirical.png, id=89, 534.798pt x 332
 .0405pt>
 File: ../outputs/stage1_exchangeable_theory_vs_empirical.png Graphic file (type
  png)
 <use ../outputs/stage1_exchangeable_theory_vs_empirical.png>
 Package pdftex.def Info: ../outputs/stage1_exchangeable_theory_vs_empirical.png
-  used on input line 223.
+  used on input line 224.
 (pdftex.def)             Requested size: 432.17375pt x 268.32814pt.
 
 
 [3]
-<../outputs/stage1_exchangeable_same_v_collapse.png, id=83, 549.252pt x 346.896
+<../outputs/stage1_exchangeable_same_v_collapse.png, id=99, 549.252pt x 346.896
 pt>
 File: ../outputs/stage1_exchangeable_same_v_collapse.png Graphic file (type png
 )
 <use ../outputs/stage1_exchangeable_same_v_collapse.png>
 Package pdftex.def Info: ../outputs/stage1_exchangeable_same_v_collapse.png  us
-ed on input line 249.
+ed on input line 250.
 (pdftex.def)             Requested size: 432.17375pt x 272.94913pt.
-<../outputs/stage1_exchangeable_normalized_collapse.png, id=84, 549.252pt x 346
-.896pt>
+<../outputs/stage1_exchangeable_normalized_collapse.png, id=100, 549.252pt x 34
+6.896pt>
 File: ../outputs/stage1_exchangeable_normalized_collapse.png Graphic file (type
  png)
 <use ../outputs/stage1_exchangeable_normalized_collapse.png>
 Package pdftex.def Info: ../outputs/stage1_exchangeable_normalized_collapse.png
-  used on input line 258.
+  used on input line 259.
 (pdftex.def)             Requested size: 432.17375pt x 272.94913pt.
 
 
@@ -666,23 +666,61 @@ Package pdftex.def Info: ../outputs/stage1_exchangeable_normalized_collapse.png
 [5 <../outputs/stage1_exchangeable_same_v_collapse.png>]
 
 [6 <../outputs/stage1_exchangeable_normalized_collapse.png>]
+<../outputs/stage2_labeled_prior_landscape.png, id=120, 578.16pt x 346.896pt>
+File: ../outputs/stage2_labeled_prior_landscape.png Graphic file (type png)
+<use ../outputs/stage2_labeled_prior_landscape.png>
+Package pdftex.def Info: ../outputs/stage2_labeled_prior_landscape.png  used on
+ input line 369.
+(pdftex.def)             Requested size: 399.29463pt x 239.57552pt.
 
-[7] (./monty_iv.aux)
+
+[7 <../outputs/stage2_labeled_prior_landscape.png>]
+<../outputs/stage2_labeled_strategy_panel.png, id=129, 968.418pt x 303.534pt>
+File: ../outputs/stage2_labeled_strategy_panel.png Graphic file (type png)
+<use ../outputs/stage2_labeled_strategy_panel.png>
+Package pdftex.def Info: ../outputs/stage2_labeled_strategy_panel.png  used on 
+input line 395.
+(pdftex.def)             Requested size: 469.75502pt x 147.23695pt.
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 4
+21.
+
+(/usr/local/texlive/2025basic/texmf-dist/tex/latex/lm/t1lmtt.fd
+File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+Package microtype Info: Loading generic protrusion settings for font family
+(microtype)             `lmtt' (encoding: T1).
+(microtype)             For optimal results, create family-specific settings.
+(microtype)             See the microtype manual for details.
+<../outputs/stage2_labeled_policy_gain_heatmap.png, id=131, 520.344pt x 317.988
+pt>
+File: ../outputs/stage2_labeled_policy_gain_heatmap.png Graphic file (type png)
+
+<use ../outputs/stage2_labeled_policy_gain_heatmap.png>
+Package pdftex.def Info: ../outputs/stage2_labeled_policy_gain_heatmap.png  use
+d on input line 428.
+(pdftex.def)             Requested size: 413.3867pt x 252.63913pt.
+
+
+[8 <../outputs/stage2_labeled_strategy_panel.png>]
+
+[9 <../outputs/stage2_labeled_policy_gain_heatmap.png>]
+
+[10] (./monty_iv.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
 Package rerunfilecheck Info: File `monty_iv.out' has not changed.
-(rerunfilecheck)             Checksum: 99C0CEA4D27F626E8908238D5FD4E657;1677.
+(rerunfilecheck)             Checksum: F0CAA5C262C4FDF181667AA484E4EB10;2553.
  ) 
 Here is how much of TeX's memory you used:
- 14081 strings out of 474662
- 222663 string characters out of 5751110
- 663223 words of memory out of 5000000
- 36738 multiletter control sequences out of 15000+600000
- 640799 words of font info for 162 fonts, out of 8000000 for 9000
+ 14197 strings out of 474662
+ 225207 string characters out of 5751110
+ 664094 words of memory out of 5000000
+ 36819 multiletter control sequences out of 15000+600000
+ 645616 words of font info for 176 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
- 75i,6n,79p,1005b,562s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,9n,79p,1005b,538s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></u
 sr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/lo
 cal/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmex10.pfb></usr/local/t
@@ -695,12 +733,13 @@ onts/type1/public/lm/lmr7.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/ty
 pe1/public/lm/lmr8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/pub
 lic/lm/lmri10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/l
 m/lmsy10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lms
-y8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/amsfonts/sym
-bols/msbm10.pfb>
-Output written on monty_iv.pdf (7 pages, 381816 bytes).
+y8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/lm/lmtt10.pf
+b></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/amsfonts/symbols/
+msbm10.pfb>
+Output written on monty_iv.pdf (10 pages, 580465 bytes).
 PDF statistics:
- 190 PDF objects out of 1000 (max. 8388607)
- 143 compressed objects within 2 object streams
- 30 named destinations out of 1000 (max. 500000)
- 45152 words of extra memory for PDF output out of 51595 (max. 10000000)
+ 239 PDF objects out of 1000 (max. 8388607)
+ 181 compressed objects within 2 object streams
+ 40 named destinations out of 1000 (max. 500000)
+ 48783 words of extra memory for PDF output out of 51595 (max. 10000000)
 

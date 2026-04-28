@@ -49,9 +49,10 @@ and expected switch value is $V(K-1)/[K(K-1-t)]$. Thus unequal prizes alone do
 not destroy the one-dimensional structure. The real complexity appears only
 when door labels carry prior information or when switching ceases to be
 uniform. We formulate the exchangeable theorem, derive the constant-cost
-threshold, and supplement the theorem with empirical Stage 1 evidence: theory
-versus simulation curves and collapse plots across distinct unequal prize
-vectors with the same total reward mass.
+threshold, and supplement the theorem with empirical evidence in two stages:
+Stage 1 verifies the exchangeable collapse numerically, while Stage 2 shows how
+label-specific priors break that scalar picture and make initial choice,
+switching rule, and Monty's policy strategically relevant.
 \end{abstract}
 
 \section{Setup}
@@ -323,6 +324,124 @@ so each door has prior mean
 \]
 This is the direct multiple-prize unequal-value analogue of the Bernoulli-value
 model from Part III.
+
+\section{Stage 2: Labeled Unequal Prizes}
+
+Stage 2 moves from exchangeable reward placement to explicit labeled priors. The
+point is no longer to verify a scalar collapse theorem, because there is no such
+scalar collapse left. Instead the goal is to expose which strategic dimensions
+become relevant once door labels carry information.
+
+The labeled model used in the code is:
+\[
+  X_j=
+  \begin{cases}
+    v_j & \text{with probability } p_j,\\
+    0   & \text{with probability } 1-p_j.
+  \end{cases}
+\]
+So each door has prior mean
+\[
+  \mu_j=p_jv_j.
+\]
+This model supports three initial strategies (`random', `highest\_mu',
+`lowest\_mu'), three Monty policies (`uniform\_zero', `low\_mu\_zero',
+`high\_mu\_zero'), and four switch rules (`stay', `uniform\_switch',
+`prior\_best\_switch', `oracle\_best\_switch').
+
+\subsection{A canonical skewed prior landscape}
+
+For the first Stage 2 experiment, we use the explicit door priors
+\[
+  (p_j,v_j)\in\{(0.1,1),\ (0.2,1.5),\ (0.8,4),\ (0.3,2),\ (0.05,10)\}.
+\]
+The resulting prior means are
+\[
+  \mu=(0.1,\ 0.3,\ 3.2,\ 0.6,\ 0.5).
+\]
+Figure~\ref{fig:stage2-prior-landscape} shows this landscape directly. There is
+one very strong prior-best door, several middling alternatives, and one
+rare-but-large reward door. This is the sort of structure where label
+information can plausibly matter.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\linewidth]{../outputs/stage2_labeled_prior_landscape.png}
+  \caption{Stage 2 labeled-prior landscape used in the canonical skewed
+  example. The bars show prior means $\mu_j=p_jv_j$, while the annotations show
+  the underlying prize probabilities and reward magnitudes.}
+  \label{fig:stage2-prior-landscape}
+\end{figure}
+
+\subsection{What Stage 2 changes qualitatively}
+
+The first qualitative change is that initial choice now matters sharply.
+Figure~\ref{fig:stage2-strategy-panel} plots empirical reward against reveal
+depth for all four switch rules under the neutral Monty policy
+`uniform\_zero', with one panel for each initial strategy.
+
+Three facts stand out.
+\begin{itemize}
+\item If the player starts at the highest-mean door, then staying is hard to
+beat, because the initial pick already captures most of the prior value.
+\item If the player starts randomly or at the lowest-mean door, switching
+becomes attractive, and `prior\_best\_switch' can beat `uniform\_switch'.
+\item `oracle\_best\_switch' remains a useful upper bound: even with labeled
+priors, payoff-relevant uncertainty survives after the reveals.
+\end{itemize}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../outputs/stage2_labeled_strategy_panel.png}
+  \caption{Stage 2 strategy panel under Monty=`uniform\_zero'. Once labels
+  matter, the initial door and switching rule interact strongly. In this
+  skewed example, `prior\_best\_switch' improves on `uniform\_switch' for
+  random and low-value starts, while `stay' dominates when the player begins at
+  the strongest prior-mean door.}
+  \label{fig:stage2-strategy-panel}
+\end{figure}
+
+The second qualitative change is that the comparison between switching rules is
+now context-dependent rather than universal. In the exchangeable model, uniform
+switching was analytically forced by symmetry. In the labeled model, it becomes
+just one rule among several. Sometimes it is too naive, because it ignores
+useful prior structure. Sometimes it is surprisingly competitive, because the
+best-looking prior-mean door is not always the door most likely to survive the
+reveal process as the best remaining option.
+
+This is precisely why the labeled model is genuinely richer than a simple
+replacement of $m$ by $V$. The relevant object is no longer a scalar summary,
+but a posterior landscape over surviving doors.
+
+\subsection{Monty policy sensitivity}
+
+Stage 2 also lets us ask whether Monty's legal reveal policy materially changes
+the player's value. Figure~\ref{fig:stage2-policy-gain} summarizes the gain
+\[
+  \texttt{prior\_best\_switch} - \texttt{uniform\_switch}
+\]
+at the largest reveal depth used in the experiment, across all initial
+strategies and all three Monty policies.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.88\linewidth]{../outputs/stage2_labeled_policy_gain_heatmap.png}
+  \caption{Gain of `prior\_best\_switch' over `uniform\_switch' at the largest
+  reveal depth in the Stage 2 run. Positive values show where label-aware
+  switching beats uniform switching. The pattern depends strongly on the
+  initial strategy and only weakly on Monty's reveal bias in this particular
+  skewed example.}
+  \label{fig:stage2-policy-gain}
+\end{figure}
+
+In this example, initial choice matters more than Monty's reveal bias: the heat
+map is structured mainly by the row corresponding to the initial strategy, not
+by the column corresponding to Monty's legal policy. That need not be true in
+general, but it is already enough to establish the main Stage 2 point:
+\begin{quote}
+once doors are labeled, the decision problem is genuinely strategic, not just a
+scalar reveal-depth optimization.
+\end{quote}
 
 \section{Conjectural Part IV Questions}
 

@@ -19,6 +19,11 @@ The coding should follow that split strictly.
 
 This is the clean baseline and should be coded first.
 
+Status:
+
+- implemented
+- CLI command: `exchangeable-stage1`
+
 ### Model
 
 - There are `K` doors.
@@ -62,6 +67,11 @@ It checks that the new `m > 1`, unequal-prize regime is understood before any la
 ## Stage 2: Labeled Unequal-Prize Model
 
 This is the genuinely new problem and should come only after Stage 1 is stable.
+
+Status:
+
+- implemented
+- CLI command: `door-specific-stage2`
 
 ### Model
 

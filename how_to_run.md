@@ -143,6 +143,13 @@ Run the door-specific Bernoulli-value prior model:
 python -B src/monty_hall_heterogeneous.py door-specific --K 10 --r 2 --trials 100000 --seed 4 --initial lowest_mu --monty uniform_zero --plot
 ```
 
+Run the same model with explicit labeled priors, where each pair is `p:v` and
+means `prize probability : reward value`:
+
+```sh
+python -B src/monty_hall_heterogeneous.py door-specific --K 5 --r 2 --trials 100000 --seed 4 --initial random --monty uniform_zero --door-priors '0.1:1,0.2:1.5,0.8:4,0.3:2,0.05:10' --plot
+```
+
 Search for a sacrifice-initial-choice example:
 
 ```sh
@@ -233,6 +240,36 @@ cd monty_hall_paper_iv
 make
 ```
 
+Run the Stage 2 labeled unequal-prize analysis:
+
+```sh
+python -B src/monty_hall_heterogeneous.py door-specific-stage2 --door-priors '0.1:1,0.2:1.5,0.8:4,0.3:2,0.05:10' --trials 60000 --seed 11 --output-prefix outputs/stage2_labeled
+```
+
+The Stage 2 analysis command writes:
+
+- `..._priors.csv`
+- `..._strategy_table.csv`
+- `..._prior_landscape.png`
+- `..._strategy_panel.png`
+- `..._monty_panel.png`
+- `..._policy_gain_heatmap.png`
+
+The Part IV paper now also uses these Stage 2 labeled-prior figures:
+
+- `stage2_labeled_prior_landscape.png`
+- `stage2_labeled_strategy_panel.png`
+- `stage2_labeled_policy_gain_heatmap.png`
+
+So the standard full Part IV workflow is:
+
+```sh
+python -B src/monty_hall_heterogeneous.py exchangeable-stage1 --K 12 --m 4 --reward-vectors '1,2,5,9;4,4,4,5;8,4,3,2' --trials 100000 --seed 3 --output-prefix outputs/stage1_exchangeable
+python -B src/monty_hall_heterogeneous.py door-specific-stage2 --door-priors '0.1:1,0.2:1.5,0.8:4,0.3:2,0.05:10' --trials 60000 --seed 11 --output-prefix outputs/stage2_labeled
+cd monty_hall_paper_iv
+make
+```
+
 ## Clean Build Artifacts
 
 Clean Part I LaTeX artifacts:
@@ -274,3 +311,4 @@ make clean
 - Exchangeable heterogeneous rewards collapse to total reward mass under uniform switching.
 - Door-specific priors make switching rules, Monty policy, and initial choice matter.
 - Part IV Stage 1 shows that unequal prize vectors with the same total reward mass `V` collapse empirically under exchangeability.
+- Part IV Stage 2 shows that once door labels carry priors, initial choice and switch rule interact strongly and the scalar collapse disappears.

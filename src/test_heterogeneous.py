@@ -4,10 +4,12 @@ from monty_hall_heterogeneous import (
     DoorPrior,
     exchangeable_curve_rows,
     exchangeable_theory,
+    parse_probability_reward_pairs,
     parse_reward_values,
     parse_reward_vector_sets,
     simulate_door_specific,
     simulate_exchangeable,
+    stage2_rows,
 )
 
 
@@ -50,6 +52,19 @@ class HeterogeneousRewardTests(unittest.TestCase):
             parse_reward_values("")
         with self.assertRaises(ValueError):
             parse_reward_values("1,0,3")
+
+    def test_parse_probability_reward_pairs(self) -> None:
+        priors = parse_probability_reward_pairs("0.9:4, 0.3:5, 0.1:10")
+        self.assertEqual(len(priors), 3)
+        self.assertAlmostEqual(priors[0].mean, 3.6)
+        self.assertAlmostEqual(priors[1].mean, 1.5)
+        self.assertAlmostEqual(priors[2].mean, 1.0)
+        with self.assertRaises(ValueError):
+            parse_probability_reward_pairs("")
+        with self.assertRaises(ValueError):
+            parse_probability_reward_pairs("1.1:4")
+        with self.assertRaises(ValueError):
+            parse_probability_reward_pairs("0.4:-2")
 
     def test_exchangeable_curve_rows_cover_all_reveals(self) -> None:
         rows = exchangeable_curve_rows(
@@ -111,6 +126,28 @@ class HeterogeneousRewardTests(unittest.TestCase):
             priors=priors,
         )
         self.assertGreater(low.strategy_values["prior_best_switch"], high.strategy_values["prior_best_switch"])
+
+    def test_stage2_rows_cover_strategy_grid(self) -> None:
+        priors = parse_probability_reward_pairs("0.1:1,0.2:1.5,0.8:4,0.3:2")
+        rows = stage2_rows(priors=priors, r_values=[0, 1], trials=15_000, seed=41)
+        self.assertEqual(len(rows), 2 * 3 * 3 * 4)
+        seen = {
+            (row["r"], row["initial_strategy"], row["monty_policy"], row["switch_strategy"])
+            for row in rows
+        }
+        self.assertIn((1.0, "highest_mu", "uniform_zero", "prior_best_switch"), seen)
+        self.assertIn((0.0, "lowest_mu", "high_mu_zero", "oracle_best_switch"), seen)
+
+        stage2_slice = [
+            row
+            for row in rows
+            if row["r"] == 1.0
+            and row["initial_strategy"] == "random"
+            and row["monty_policy"] == "uniform_zero"
+        ]
+        values = {row["switch_strategy"]: row["empirical_reward"] for row in stage2_slice}
+        self.assertGreater(values["prior_best_switch"], values["uniform_switch"])
+        self.assertGreaterEqual(values["oracle_best_switch"], values["prior_best_switch"])
 
 
 if __name__ == "__main__":
