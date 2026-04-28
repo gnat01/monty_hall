@@ -14,6 +14,7 @@ Two models are intentionally kept separate:
 from __future__ import annotations
 
 import argparse
+import csv
 import random
 import statistics
 from dataclasses import dataclass
@@ -87,6 +88,13 @@ def parse_reward_values(raw: str) -> list[float]:
     return values
 
 
+def parse_reward_vector_sets(raw: str) -> list[list[float]]:
+    vectors = [parse_reward_values(chunk) for chunk in raw.split(";") if chunk.strip()]
+    if not vectors:
+        raise ValueError("Need at least one reward vector")
+    return vectors
+
+
 def sample_positive_rewards(
     m: int,
     rng: random.Random,
@@ -148,6 +156,112 @@ def exchangeable_theory(k: int, m: int, r: int, total_reward: float) -> dict[str
         "stay": total_reward / k,
         "switch": total_reward * (k - 1) / (k * (k - 1 - r)),
     }
+
+
+def exchangeable_curve_rows(
+    k: int,
+    m: int,
+    reward_dist: RewardDist = "lognormal",
+    reward_values: list[float] | None = None,
+    trials: int = 100_000,
+    seed: int | None = None,
+    label: str | None = None,
+) -> list[dict[str, float | str]]:
+    validate_exchangeable(k, m, 0)
+    total_reward = sum(reward_values) if reward_values is not None else None
+    rows: list[dict[str, float | str]] = []
+    for r in range(0, k - m):
+        out = simulate_exchangeable(
+            k=k,
+            m=m,
+            r=r,
+            reward_dist=reward_dist,
+            reward_values=reward_values,
+            trials=trials,
+            seed=None if seed is None else seed + 10_000 * r,
+        )
+        current_total_reward = total_reward if total_reward is not None else out.mean_total_reward
+        rows.append(
+            {
+                "label": label or (",".join(f"{value:g}" for value in reward_values) if reward_values is not None else reward_dist),
+                "k": float(k),
+                "m": float(m),
+                "r": float(r),
+                "total_reward": current_total_reward,
+                "empirical_stay": out.empirical_stay,
+                "theory_stay": out.theory_stay,
+                "empirical_switch": out.empirical_switch,
+                "theory_switch": out.theory_switch,
+                "empirical_stay_per_total": out.empirical_stay / current_total_reward,
+                "theory_stay_per_total": out.theory_stay / current_total_reward,
+                "empirical_switch_per_total": out.empirical_switch / current_total_reward,
+                "theory_switch_per_total": out.theory_switch / current_total_reward,
+            }
+        )
+    return rows
+
+
+def write_exchangeable_rows_csv(rows: list[dict[str, float | str]], path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def plot_exchangeable_theory_vs_empirical(rows: list[dict[str, float | str]], path: Path) -> Path:
+    OUT_DIR.mkdir(exist_ok=True)
+    r_vals = [row["r"] for row in rows]
+    fig, ax = plt.subplots(figsize=(7.4, 4.6))
+    ax.plot(r_vals, [row["theory_stay"] for row in rows], color="#22577a", linewidth=2.2, label="stay theory")
+    ax.plot(r_vals, [row["theory_switch"] for row in rows], color="#b7791f", linewidth=2.2, label="switch theory")
+    ax.scatter(r_vals, [row["empirical_stay"] for row in rows], color="#22577a", s=34, alpha=0.85, label="stay empirical")
+    ax.scatter(r_vals, [row["empirical_switch"] for row in rows], color="#b7791f", s=34, alpha=0.85, label="switch empirical")
+    ax.set_xlabel("reveals r")
+    ax.set_ylabel("expected reward")
+    ax.set_title("Exchangeable unequal prizes: theory vs empirical")
+    ax.grid(axis="y", alpha=0.25)
+    ax.legend(ncol=2)
+    fig.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
+
+
+def plot_exchangeable_collapse(rows: list[dict[str, float | str]], path: Path, *, normalized: bool) -> Path:
+    grouped: dict[str, list[dict[str, float | str]]] = {}
+    for row in rows:
+        grouped.setdefault(str(row["label"]), []).append(row)
+    fig, ax = plt.subplots(figsize=(7.6, 4.8))
+    colors = ["#22577a", "#0f766e", "#b7791f", "#b23a30", "#6d597a", "#4d7c0f"]
+    for index, (label, group_rows) in enumerate(sorted(grouped.items())):
+        group_rows = sorted(group_rows, key=lambda row: row["r"])
+        r_vals = [row["r"] for row in group_rows]
+        if normalized:
+            ys = [row["empirical_switch_per_total"] for row in group_rows]
+            theory = [row["theory_switch_per_total"] for row in group_rows]
+            y_label = "switch reward / V"
+            title = "Normalized collapse across reward vectors"
+        else:
+            ys = [row["empirical_switch"] for row in group_rows]
+            theory = [row["theory_switch"] for row in group_rows]
+            y_label = "switch reward"
+            title = "Same-V collapse across reward vectors"
+        color = colors[index % len(colors)]
+        ax.scatter(r_vals, ys, s=32, alpha=0.85, color=color, label=label)
+        ax.plot(r_vals, theory, linewidth=1.4, alpha=0.9, color=color)
+    ax.set_xlabel("reveals r")
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
+    ax.grid(axis="y", alpha=0.25)
+    ax.legend(title="reward vector", fontsize=8)
+    fig.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
 
 
 def simulate_exchangeable(
@@ -440,6 +554,14 @@ def parse_args() -> argparse.Namespace:
     fs.add_argument("--tries", type=int, default=200)
     fs.add_argument("--trials", type=int, default=20_000)
     fs.add_argument("--seed", type=int, default=None)
+
+    s1 = sub.add_parser("exchangeable-stage1", help="write Stage 1 tables and collapse plots for unequal exchangeable prizes")
+    s1.add_argument("--K", "--k", dest="k", type=int, required=True)
+    s1.add_argument("--m", type=int, required=True)
+    s1.add_argument("--reward-vectors", type=str, required=True, help="Semicolon-separated reward vectors, each comma-separated, e.g. '1,2,5,9;4,4,4,5'")
+    s1.add_argument("--trials", type=int, default=100_000)
+    s1.add_argument("--seed", type=int, default=None)
+    s1.add_argument("--output-prefix", type=str, default="outputs/stage1_exchangeable")
     return parser.parse_args()
 
 
@@ -475,6 +597,37 @@ def main() -> None:
             print("highest-initial values:", high.strategy_values)
             print("lowest-initial values:", low.strategy_values)
             print("priors:", [(p.zero_prob, p.reward_value, p.mean) for p in high.priors])
+    elif args.cmd == "exchangeable-stage1":
+        reward_vectors = parse_reward_vector_sets(args.reward_vectors)
+        if any(len(vector) != args.m for vector in reward_vectors):
+            raise ValueError("Every reward vector must have length m")
+        prefix = Path(args.output_prefix)
+        all_rows: list[dict[str, float | str]] = []
+        totals = {round(sum(vector), 12) for vector in reward_vectors}
+        for idx, vector in enumerate(reward_vectors):
+            label = ",".join(f"{value:g}" for value in vector)
+            rows = exchangeable_curve_rows(
+                k=args.k,
+                m=args.m,
+                reward_values=vector,
+                trials=args.trials,
+                seed=None if args.seed is None else args.seed + 100_000 * idx,
+                label=label,
+            )
+            all_rows.extend(rows)
+            if idx == 0:
+                table_path = write_exchangeable_rows_csv(rows, Path(f"{prefix}_curve_table.csv"))
+                print("wrote", table_path)
+                curve_path = plot_exchangeable_theory_vs_empirical(rows, Path(f"{prefix}_theory_vs_empirical.png"))
+                print("wrote", curve_path)
+        collapse_path = write_exchangeable_rows_csv(all_rows, Path(f"{prefix}_collapse_table.csv"))
+        print("wrote", collapse_path)
+        raw_collapse = plot_exchangeable_collapse(all_rows, Path(f"{prefix}_same_v_collapse.png"), normalized=False)
+        print("wrote", raw_collapse)
+        normalized_collapse = plot_exchangeable_collapse(all_rows, Path(f"{prefix}_normalized_collapse.png"), normalized=True)
+        print("wrote", normalized_collapse)
+        if len(totals) != 1:
+            print("warning: reward vectors do not share the same total reward V, so the raw collapse is not expected to coincide exactly")
 
 
 if __name__ == "__main__":

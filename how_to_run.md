@@ -131,6 +131,12 @@ Run the exchangeable unequal-prize Stage IV baseline with explicit reward values
 python -B src/monty_hall_heterogeneous.py exchangeable --K 12 --m 4 --r 4 --reward-values 1,2,5,9 --trials 100000 --seed 3
 ```
 
+Run the full Stage IV exchangeable analysis with tables and collapse plots:
+
+```sh
+python -B src/monty_hall_heterogeneous.py exchangeable-stage1 --K 12 --m 4 --reward-vectors '1,2,5,9;4,4,4,5;8,4,3,2' --trials 100000 --seed 3 --output-prefix outputs/stage1_exchangeable
+```
+
 Run the door-specific Bernoulli-value prior model:
 
 ```sh
@@ -191,6 +197,14 @@ The exchangeable CLI now supports:
 - `--reward-values 1,2,5,9`
 
 which must contain exactly `m` strictly positive values.
+
+The Stage 1 analysis command writes:
+
+- `..._curve_table.csv`
+- `..._theory_vs_empirical.png`
+- `..._collapse_table.csv`
+- `..._same_v_collapse.png`
+- `..._normalized_collapse.png`
 
 ## Clean Build Artifacts
 

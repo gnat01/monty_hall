@@ -2,8 +2,10 @@ import unittest
 
 from monty_hall_heterogeneous import (
     DoorPrior,
+    exchangeable_curve_rows,
     exchangeable_theory,
     parse_reward_values,
+    parse_reward_vector_sets,
     simulate_door_specific,
     simulate_exchangeable,
 )
@@ -43,10 +45,26 @@ class HeterogeneousRewardTests(unittest.TestCase):
 
     def test_parse_reward_values(self) -> None:
         self.assertEqual(parse_reward_values("1, 2.5, 7"), [1.0, 2.5, 7.0])
+        self.assertEqual(parse_reward_vector_sets("1,2;3,4"), [[1.0, 2.0], [3.0, 4.0]])
         with self.assertRaises(ValueError):
             parse_reward_values("")
         with self.assertRaises(ValueError):
             parse_reward_values("1,0,3")
+
+    def test_exchangeable_curve_rows_cover_all_reveals(self) -> None:
+        rows = exchangeable_curve_rows(
+            k=8,
+            m=3,
+            reward_values=[1.0, 2.0, 5.0],
+            trials=20_000,
+            seed=111,
+            label="1,2,5",
+        )
+        self.assertEqual(len(rows), 8 - 3)
+        self.assertEqual(rows[0]["r"], 0.0)
+        self.assertEqual(rows[-1]["r"], float(8 - 3 - 1))
+        for row in rows:
+            self.assertAlmostEqual(row["theory_stay"], 8.0 / 8.0)
 
     def test_door_specific_prior_best_beats_uniform_in_skewed_case(self) -> None:
         priors = [
