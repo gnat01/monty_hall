@@ -1,5 +1,24 @@
 # How To Run
 
+## Quick Index
+
+- Part I baseline simulator:
+  `src/monty_hall_generalised.py`
+- Part I conditional switching:
+  `src/monty_hall_clean_conditional_switching.py`
+- Part II variable costs:
+  `src/monty_hall_variable_costs.py`
+- Part III / IV heterogeneous rewards:
+  `src/monty_hall_heterogeneous.py`
+- Legacy fixed-parameter scripts:
+  `src/monty_hall_clean.py`
+  `src/monty_hall_and_others.py`
+- Paper figure generators:
+  `monty_hall_paper/generate_plots.py`
+  `monty_hall_paper/generate_plots_with_multik.py`
+  `monty_hall_paper_ii/generate_plots.py`
+  `monty_hall_paper_iii/generate_plots.py`
+
 Run all commands from the project root:
 
 ```sh
@@ -114,6 +133,45 @@ Generated simulator plots are written to:
 ```text
 outputs/
 ```
+
+### Legacy Fixed-Parameter Part I Scripts
+
+These older scripts do not expose a configurable CLI. They run with built-in
+settings and write outputs to `outputs/`.
+
+Run the clean fixed-parameter simulator:
+
+```sh
+python -B src/monty_hall_clean.py
+```
+
+Built-in settings:
+
+- `n_experiments = 1000`
+- `n_chances = 1000`
+- `num_doors = 4`
+
+Main output:
+
+- `outputs/clean_switch_vs_stay.png`
+
+Run the exploratory mixed script:
+
+```sh
+python -B src/monty_hall_and_others.py
+```
+
+This script runs:
+
+- a toy path plot
+- a membership-key demo
+- a Rademacher sampling demo
+- a classical Monty Hall switch-vs-stay simulation
+
+Main outputs:
+
+- `outputs/and_others_path_plot.png`
+- `outputs/and_others_monty_hist.png`
 
 Build the Part I paper:
 
