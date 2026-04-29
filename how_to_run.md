@@ -39,17 +39,75 @@ MPLCONFIGDIR=.mplconfig python -B -m unittest discover -s src
 
 ## Part I: Generalized Monty Hall
 
+Help:
+
+```sh
+python -B src/monty_hall_generalised.py --help
+python -B src/monty_hall_clean_conditional_switching.py --help
+```
+
 Run the generalized simulator:
 
 ```sh
 python -B src/monty_hall_generalised.py --K 10 --m 3 --r 4 --experiments 1000 --chances 500 --seed 1 --plot
 ```
 
+Flags for `monty_hall_generalised.py`:
+
+- `--K`, `--k`
+  number of doors
+  default: `3`
+- `--m`
+  number of prize doors
+  default: `1`
+- `--r`
+  number of losing doors opened
+  default: `1`
+- `--experiments`
+  outer simulation runs
+  default: `10000`
+- `--chances`
+  trials per experiment
+  default: `100`
+- `--seed`
+  RNG seed
+  default: unset
+- `--plot`
+  save the theory-vs-empirical plot
+- `--demo`
+  run the original demonstration cases
+
 Run the conditional-switching simulator:
 
 ```sh
 python -B src/monty_hall_clean_conditional_switching.py --K 8 --m 2 --r 3 --experiments 1000 --chances 500 --seed 2 --switch-probability 0.35 --plot
 ```
+
+Flags for `monty_hall_clean_conditional_switching.py`:
+
+- `--K`, `--k`
+  number of doors
+  default: `5`
+- `--m`
+  number of prize doors
+  default: `1`
+- `--r`
+  number of losing doors opened
+  default: `1`
+- `--experiments`
+  outer simulation runs
+  default: `1000`
+- `--chances`
+  trials per experiment
+  default: `100`
+- `--switch-probability`
+  probability of switching in the conditional strategy
+  if omitted, the script uses its built-in default rule
+- `--seed`
+  RNG seed
+  default: unset
+- `--plot`
+  save the histogram plot
 
 Generated simulator plots are written to:
 
@@ -71,6 +129,12 @@ monty_hall_paper/monty.pdf
 ```
 
 ## Part II: Variable Reveal Costs
+
+Help:
+
+```sh
+python -B src/monty_hall_variable_costs.py --help
+```
 
 The variable-cost code is:
 
@@ -95,6 +159,33 @@ Run a linear-plus-cap cost example and export the value table:
 ```sh
 python -B src/monty_hall_variable_costs.py --K 50 --m 1 --kind linear_saturating --base 0.004 --slope 0.0018 --saturation 0.022 --csv outputs/variable_cost_table.csv
 ```
+
+Flags for `monty_hall_variable_costs.py`:
+
+- `--K`, `--k`
+  number of doors
+  default: `50`
+- `--m`
+  number of prize doors
+  default: `1`
+- `--kind`
+  one of:
+  `constant`, `linear`, `saturating`, `linear_saturating`
+  default: `linear`
+- `--base`
+  base reveal cost level
+  default: `0.002`
+- `--slope`
+  linear slope parameter
+  default: `0.0004`
+- `--saturation`
+  saturation cap parameter
+  default: unset
+- `--tau`
+  saturation timescale parameter
+  default: unset
+- `--csv`
+  optional output CSV path
 
 The CSV columns are:
 
